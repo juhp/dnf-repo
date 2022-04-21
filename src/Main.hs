@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- SPDX-License-Identifier: BSD-3-Clause
 
 module Main (main) where
@@ -67,3 +69,9 @@ runMain createcopr repo args = do
                 writeFile tmpfile repodef
                 sudo_ "cp" [tmpfile, repofile]
                 return [repofile]
+
+#if !MIN_VERSION_simple_cmd(0,2,4)
+filesWithExtension :: FilePath -> String -> IO [FilePath]
+filesWithExtension dir ext =
+  filter (ext `isExtensionOf`) <$> listDirectory dir
+#endif
