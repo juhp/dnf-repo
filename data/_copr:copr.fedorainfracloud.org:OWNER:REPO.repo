@@ -1,0 +1,10 @@
+[copr:copr.fedorainfracloud.org:@COPR_OWNER@:@COPR_REPO@]
+name=Copr repo for @COPR_REPO@ owned by @COPR_OWNER@
+baseurl=https://download.copr.fedorainfracloud.org/results/@COPR_OWNER@/@COPR_REPO@/fedora-$releasever-$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/@COPR_OWNER@/@COPR_REPO@/pubkey.gpg
+repo_gpgcheck=0
+enabled=0
+enabled_metadata=1

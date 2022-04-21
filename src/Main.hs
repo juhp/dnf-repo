@@ -5,25 +5,65 @@ module Main (main) where
 import Data.List.Extra
 import SimpleCmd
 import SimpleCmdArgs
+import System.Directory
+import System.FilePath
+import System.IO.Extra (withTempDir)
 
-import qualified Paths_dnf_tool
+import Paths_dnf_tool (getDataFileName, version)
+import YumRepoFile
 
--- FIXME add copr disabled
+-- FIXME --testing
+-- FIXME --disable-{testing,modular,others}
 main :: IO ()
 main = do
-  simpleCmdArgs' (Just Paths_dnf_tool.version)
-    "DNF wrapper tool"
+  simpleCmdArgs' (Just version)
+    "DNF repo wrapper tool"
     "see https://github.com/juhp/dnf-tool#readme" $
     runMain
-    <$> optional repoOpt
+    <$> switchWith 'c' "add-copr" "Create repo file for copr repo"
+    <*> strArg "REPO"
     <*> some (strArg "ARGS")
-  where
-    repoOpt = strOptionWith 'c' "copr" "REPO" "Specify Copr repo"
+
+coprRepoTemplate :: FilePath
+coprRepoTemplate =
+  "_copr:copr.fedorainfracloud.org:OWNER:REPO.repo"
 
 -- FIXME support other coprs
-runMain :: Maybe String -> [String] -> IO ()
-runMain mcopr args = do
-  let copr = case mcopr of
-               Nothing -> []
-               Just repo -> ["--enablerepo", "copr:copr.fedorainfracloud.org:" ++ replace "/" ":" repo]
-  sudo_ "dnf" $ copr ++ args
+-- FIXME delete created repo file if copr doesn't exist
+runMain :: Bool -> String -> [String] -> IO ()
+runMain createcopr repo args = do
+  withCurrentDirectory "/etc/yum.repos.d" $ do
+    repofiles <-
+      if createcopr
+      then addRepo
+      else filter (replace "/" ":" repo `isInfixOf`) <$>
+           filesWithExtension "." "repo"
+    case repofiles of
+      [] -> error' $ "repo file not found for " ++ repo
+      [repofile] -> runRepo repofile
+      repos -> error' $ show (length repos) ++ " repo files found: " ++ unwords repos
+      where
+        runRepo :: FilePath -> IO ()
+        runRepo repofile = do
+          name <- readRepoName repofile
+          let repoargs = ["--enablerepo", name]
+          sudo_ "dnf" $ repoargs ++ args
+
+        addRepo :: IO [FilePath]
+        addRepo = do
+          case stripInfix "/" repo of
+            Nothing -> error' $ "invalid copr: " ++ repo
+            Just (copr_owner,copr_repo) -> do
+              template <- getDataFileName coprRepoTemplate
+              repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
+              let repofile = replace "OWNER" copr_owner $
+                             replace "REPO" copr_repo coprRepoTemplate
+              exists <- doesFileExist repofile
+              if exists
+                then error' $ "repo already defined: " ++ repofile
+                else putStrLn $ "Setting up copr repo " ++ repo
+              withTempDir $ \ tmpdir -> do
+                let tmpfile = tmpdir </> repofile
+                writeFile tmpfile repodef
+                sudo_ "cp" [tmpfile, repofile]
+                return [repofile]
