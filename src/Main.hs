@@ -11,7 +11,7 @@ import System.Directory
 import System.FilePath
 import System.IO.Extra (withTempDir)
 
-import Paths_dnf_tool (getDataFileName, version)
+import Paths_dnf_repo (getDataFileName, version)
 import YumRepoFile
 
 -- FIXME --testing
@@ -19,8 +19,8 @@ import YumRepoFile
 main :: IO ()
 main = do
   simpleCmdArgs' (Just version)
-    "DNF repo wrapper tool"
-    "see https://github.com/juhp/dnf-tool#readme" $
+    "DNF wrapper repo tool"
+    "see https://github.com/juhp/dnf-repo#readme" $
     runMain
     <$> switchWith 'c' "add-copr" "Create repo file for copr repo"
     <*> strArg "REPO"

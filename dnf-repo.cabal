@@ -1,4 +1,4 @@
-name:                dnf-tool
+name:                dnf-repo
 version:             0.1.0
 synopsis:            One line summary
 description:
@@ -9,8 +9,8 @@ author:              Jens Petersen <juhpetersen@gmail.com>
 maintainer:          Jens Petersen <juhpetersen@gmail.com>
 copyright:           2022  Jens Petersen <juhpetersen@gmail.com>
 category:            Utility
-homepage:            https://github.com/juhp/dnf-tool
-bug-reports:         https://github.com/juhp/dnf-tool/issues
+homepage:            https://github.com/juhp/dnf-repo
+bug-reports:         https://github.com/juhp/dnf-repo/issues
 build-type:          Simple
 --  extra-doc-files:     README.md
 --                       ChangeLog.md
@@ -24,11 +24,11 @@ data-files:          _copr:copr.fedorainfracloud.org:OWNER:REPO.repo
 
 source-repository head
   type:                git
-  location:            https://github.com/juhp/dnf-tool.git
+  location:            https://github.com/juhp/dnf-repo.git
 
-executable dnf-tool
+executable dnf-repo
   main-is:             Main.hs
-  other-modules:       Paths_dnf_tool
+  other-modules:       Paths_dnf_repo
                        YumRepoFile
   hs-source-dirs:      src
   build-depends:       base < 5,

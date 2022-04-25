@@ -1,4 +1,4 @@
-# dnf-tool
+# dnf-repo
 
 A wrapper over dnf for using extra optional repos (eg coprs)
 with disabled yum repo files.
