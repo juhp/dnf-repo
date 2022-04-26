@@ -2,17 +2,21 @@
 
 module YumRepoFile (readRepoName) where
 
-import Data.Ini
-import qualified Data.Text as T
-import SimpleCmd (error')
+import Data.List.Extra (trim)
+import Data.Maybe (mapMaybe)
+import SimpleCmd (error', grep)
 
 -- FIXME check enabled?
 readRepoName :: FilePath -> IO String
 readRepoName file = do
-  ini <- readIniFile file
-  case ini of
-    Left err -> error' err
-    Right i ->
-      case sections i of
-        [sec] -> return $ T.unpack sec
-        _ -> error' $ "broken repo file: " ++ file
+  parts <- grep "^\\[" file
+  case mapMaybe (secName . trim) parts of
+    [] -> error' $ "repo file with no sections: " ++ file
+    (sec:_) -> putStrLn sec >> return sec
+  where
+    secName :: String -> Maybe String
+    secName ('[' : rest) | ' ' `notElem` rest =
+      if last rest == ']'
+      then Just (init rest)
+      else Nothing
+    secName xs = error' $ "bad section " ++ show xs ++ " in " ++ file
