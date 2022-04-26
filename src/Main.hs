@@ -4,27 +4,38 @@
 
 module Main (main) where
 
+import Control.Monad
 import Data.List.Extra
 import SimpleCmd
 import SimpleCmdArgs
 import System.Directory
 import System.FilePath
 import System.IO.Extra (withTempDir)
+import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
 import YumRepoFile
 
+data Mode = Copr | Default | Disable | List
+  deriving Eq
+
 -- FIXME --testing
 -- FIXME --disable-{testing,modular,others}
+-- FIXME --save-enabled
 main :: IO ()
 main = do
   simpleCmdArgs' (Just version)
     "DNF wrapper repo tool"
     "see https://github.com/juhp/dnf-repo#readme" $
     runMain
-    <$> switchWith 'c' "add-copr" "Create repo file for copr repo"
+    <$> modeOpt
     <*> strArg "REPO"
-    <*> some (strArg "ARGS")
+    <*> many (strArg "ARGS")
+  where
+    modeOpt =
+      flagWith' Copr 'c' "add-copr" "Create repo file for copr repo" <|>
+      flagWith' List 'l' "list" "List repos" <|>
+      flagWith Default Disable 'd' "disable" "Disable repos"
 
 coprRepoTemplate :: FilePath
 coprRepoTemplate =
@@ -32,25 +43,29 @@ coprRepoTemplate =
 
 -- FIXME support other coprs
 -- FIXME delete created repo file if copr doesn't exist
-runMain :: Bool -> String -> [String] -> IO ()
-runMain createcopr repo args = do
+runMain :: Mode -> String -> [String] -> IO ()
+runMain mode repo args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
-    repofiles <-
-      if createcopr
-      then addRepo
-      else filter (replace "/" ":" repo `isInfixOf`) <$>
-           filesWithExtension "." "repo"
-    case repofiles of
-      [] -> error' $ "repo file not found for " ++ repo
-      [repofile] -> runRepo repofile
-      repos -> error' $ show (length repos) ++ " repo files found: " ++ unwords repos
-      where
-        runRepo :: FilePath -> IO ()
-        runRepo repofile = do
-          name <- readRepoName repofile
-          let repoargs = ["--enablerepo", name]
+    repofiles <- if mode == Copr
+                 then addRepo
+                 else sort . filter (replace "/" ":" repo `isInfixOf`) <$>
+                      filesWithExtension "." "repo"
+    if null repofiles
+      then error' $ "no repo file found for " ++ repo
+      else do
+        names <- mapM readRepoName repofiles
+        if mode == List
+          then mapM_ putStrLn names
+          else do
+          when (null args) $
+            error' "please give one or more dnf arguments"
+          sleep 1
+          putStrLn ""
+          let repoargs =
+                concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r])
+                names
           sudo_ "dnf" $ repoargs ++ args
-
+    where
         addRepo :: IO [FilePath]
         addRepo = do
           case stripInfix "/" repo of
