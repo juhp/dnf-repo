@@ -28,7 +28,8 @@ main = do
     "DNF wrapper repo tool"
     "see https://github.com/juhp/dnf-repo#readme" $
     runMain
-    <$> modeOpt
+    <$> switchWith 'n' "dryrun" "Dry run"
+    <*> modeOpt
     <*> strArg "REPO"
     <*> many (strArg "ARGS")
   where
@@ -43,8 +44,8 @@ coprRepoTemplate =
 
 -- FIXME support other coprs
 -- FIXME delete created repo file if copr doesn't exist
-runMain :: Mode -> String -> [String] -> IO ()
-runMain mode repo args = do
+runMain :: Bool -> Mode -> String -> [String] -> IO ()
+runMain dryrun mode repo args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     repofiles <- if mode == Copr
                  then addRepo
@@ -64,7 +65,7 @@ runMain mode repo args = do
           let repoargs =
                 concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r])
                 names
-          sudo_ "dnf" $ repoargs ++ args
+          (if dryrun then cmdN else sudo_) "dnf" $ repoargs ++ args
     where
         addRepo :: IO [FilePath]
         addRepo = do
@@ -81,8 +82,8 @@ runMain mode repo args = do
                 else putStrLn $ "Setting up copr repo " ++ repo
               withTempDir $ \ tmpdir -> do
                 let tmpfile = tmpdir </> repofile
-                writeFile tmpfile repodef
-                sudo_ "cp" [tmpfile, repofile]
+                unless dryrun $ writeFile tmpfile repodef
+                unless dryrun $ sudo_ "cp" [tmpfile, repofile]
                 return [repofile]
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
