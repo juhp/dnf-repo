@@ -29,6 +29,7 @@ source-repository head
 executable dnf-repo
   main-is:             Main.hs
   other-modules:       Paths_dnf_repo
+                       ExpireRepos
                        YumRepoFile
   hs-source-dirs:      src
   build-depends:       base < 5,
