@@ -2,6 +2,7 @@
 
 module YumRepoFile (
   readRepoNames,
+  Modular(..),
   Testing(..)
   )
 where
@@ -9,12 +10,14 @@ where
 import Data.List.Extra (isPrefixOf, isInfixOf, trim)
 import SimpleCmd (error')
 
-readRepoNames :: Bool -> Maybe Testing -> [FilePath] -> IO [FilePath]
-readRepoNames disable mtesting files = do
+readRepoNames :: Bool -> Maybe Testing -> Maybe Modular -> [FilePath]
+              -> IO [FilePath]
+readRepoNames disable mtesting mmodular files = do
   reposEnabled <- mapM readRepo files
   return $
     map fst $
     filter (selectTest . fst) $
+    filter (selectModular . fst) $
     filter (selectEnable . snd) reposEnabled
   where
     readRepo :: FilePath -> IO (String,Bool)
@@ -24,6 +27,14 @@ readRepoNames disable mtesting files = do
     selectEnable :: Bool -> Bool
     selectEnable = if disable then id else not
 
+    selectModular :: String -> Bool
+    selectModular name =
+      if "modular" `isInfixOf` name
+      then case mmodular of
+        Nothing -> False
+        Just enable -> selectEnable (enable == DisableModular)
+      else True
+
     selectTest :: String -> Bool
     selectTest name =
       if "testing" `isInfixOf` name
@@ -31,6 +42,9 @@ readRepoNames disable mtesting files = do
         Nothing -> False
         Just enable -> selectEnable (enable == DisableTesting)
       else True
+
+data Modular = EnableModular | DisableModular
+  deriving Eq
 
 data Testing = EnableTesting | DisableTesting
   deriving Eq
