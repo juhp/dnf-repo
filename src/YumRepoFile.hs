@@ -1,19 +1,46 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module YumRepoFile (readRepoNames) where
+module YumRepoFile (
+  readRepoNames,
+  Testing(..)
+  )
+where
 
-import Data.List.Extra (isPrefixOf, trim)
+import Data.List.Extra (isPrefixOf, isInfixOf, trim)
 import SimpleCmd (error')
 
-readRepo :: FilePath -> IO (String,Bool)
-readRepo file =
-  parseIni file . lines <$> readFile file
+readRepoNames :: Bool -> Maybe Testing -> [FilePath] -> IO [FilePath]
+readRepoNames disable mtesting files = do
+  reposEnabled <- mapM readRepo files
+  return $
+    map fst $
+    filter (selectTest . fst) $
+    filter (selectEnable . snd) reposEnabled
+  where
+    readRepo :: FilePath -> IO (String,Bool)
+    readRepo file =
+      parseIni file . lines <$> readFile file
+
+    selectEnable :: Bool -> Bool
+    selectEnable = if disable then id else not
+
+    selectTest :: String -> Bool
+    selectTest name =
+      if "testing" `isInfixOf` name
+      then case mtesting of
+        Nothing -> False
+        Just enable -> selectEnable (enable == DisableTesting)
+      else True
+
+data Testing = EnableTesting | DisableTesting
+  deriving Eq
 
 parseIni :: FilePath -> [String] -> (String,Bool)
 parseIni file [] = error' $ "empty ini file: " ++ file
 parseIni file (l:ls) =
   case trim l of
     "" -> parseIni file ls
+    ('#':_) -> parseIni file ls
     sec ->
       let section = secName sec
           enabled =
@@ -36,12 +63,3 @@ parseIni file (l:ls) =
           then init rest
           else error' $ "bad section " ++ sec ++ " in " ++ file
         _ -> error' $ "section not found in " ++ file
-
-readRepoNames :: Bool -> [FilePath] -> IO [FilePath]
-readRepoNames disable files = do
-  reposEnabled <- mapM readRepo files
-  return $ map fst $ filter (selectRepo . snd) reposEnabled
-  where
-    selectRepo :: Bool -> Bool
-    selectRepo =
-      if disable then id else not

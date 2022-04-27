@@ -16,11 +16,9 @@ import System.Time.Extra (sleep)
 import Paths_dnf_repo (getDataFileName, version)
 import YumRepoFile
 
-data Mode = Copr | Default | Disable | List
+data Mode = Copr | Enable | Disable | List
   deriving Eq
 
--- FIXME --testing
--- FIXME --disable-{testing,modular,others}
 -- FIXME --save-enabled
 main :: IO ()
 main = do
@@ -30,13 +28,18 @@ main = do
     runMain
     <$> switchWith 'n' "dryrun" "Dry run"
     <*> modeOpt
+    <*> optional testingOpt
     <*> strArg "REPO"
     <*> many (strArg "ARGS")
   where
     modeOpt =
       flagWith' Copr 'c' "add-copr" "Create repo file for copr repo" <|>
       flagWith' List 'l' "list" "List repos" <|>
-      flagWith Default Disable 'd' "disable" "Disable repos"
+      flagWith Enable Disable 'd' "disable" "Disable repos"
+
+    testingOpt =
+      flagWith' EnableTesting 't' "enable-testing" "Include testing repos" <|>
+      flagWith' DisableTesting 'T' "disable-testing" "Exclude testing repos"
 
 coprRepoTemplate :: FilePath
 coprRepoTemplate =
@@ -44,8 +47,9 @@ coprRepoTemplate =
 
 -- FIXME support other coprs
 -- FIXME delete created repo file if copr doesn't exist
-runMain :: Bool -> Mode -> String -> [String] -> IO ()
-runMain dryrun mode repo args = do
+runMain :: Bool -> Mode -> Maybe Testing -> String -> [String]
+        -> IO ()
+runMain dryrun mode mtesting repo args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     repofiles <- if mode == Copr
                  then addRepo
@@ -54,7 +58,7 @@ runMain dryrun mode repo args = do
     if null repofiles
       then error' $ "no repo file found for " ++ repo
       else do
-        names <- readRepoNames (mode == Disable) repofiles
+        names <- readRepoNames (mode == Disable) mtesting repofiles
         if mode == List
           then mapM_ putStrLn names
           else do
