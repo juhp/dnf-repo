@@ -70,13 +70,13 @@ runMain dryrun save mode mtesting mmodular repo args = do
       else do
         names <- readRepoNames (mode == Disable) mtesting mmodular repofiles
         mapM_ putStrLn names
-        when (null args) $ do
-          putStrLn ""
-          error' "please give one or more dnf arguments"
         sleep 1
         putStrLn ""
         when (mode == Expire) $
           expireRepos dryrun names
+        when (null args) $ do
+          putStrLn ""
+          error' "please give one or more dnf arguments"
         let repoargs =
               concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r]) names
           in doSudo dryrun "dnf" $ repoargs ++ args
