@@ -54,7 +54,7 @@ runMain dryrun mode repo args = do
     if null repofiles
       then error' $ "no repo file found for " ++ repo
       else do
-        names <- mapM readRepoName repofiles
+        names <- readRepoNames (mode == Disable) repofiles
         if mode == List
           then mapM_ putStrLn names
           else do

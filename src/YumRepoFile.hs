@@ -1,22 +1,47 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module YumRepoFile (readRepoName) where
+module YumRepoFile (readRepoNames) where
 
-import Data.List.Extra (trim)
-import Data.Maybe (mapMaybe)
-import SimpleCmd (error', grep)
+import Data.List.Extra (isPrefixOf, trim)
+import SimpleCmd (error')
 
--- FIXME check enabled?
-readRepoName :: FilePath -> IO String
-readRepoName file = do
-  parts <- grep "^\\[" file
-  case mapMaybe (secName . trim) parts of
-    [] -> error' $ "repo file with no sections: " ++ file
-    (sec:_) -> putStrLn sec >> return sec
+readRepo :: FilePath -> IO (String,Bool)
+readRepo file =
+  parseIni file . lines <$> readFile file
+
+parseIni :: FilePath -> [String] -> (String,Bool)
+parseIni file [] = error' $ "empty ini file: " ++ file
+parseIni file (l:ls) =
+  case trim l of
+    "" -> parseIni file ls
+    sec ->
+      let section = secName sec
+          enabled =
+            case dropWhile (not . ("enabled=" `isPrefixOf`)) ls of
+              [] -> error' $ "no enabled field for " ++ section
+              (e:_) ->
+                case trim e of
+                  "enabled=1" -> True
+                  "enabled=0" -> False
+                  _ -> error' $ "unknown enabled state " ++ e ++ " for " ++ section
+      in (section,enabled)
   where
-    secName :: String -> Maybe String
-    secName ('[' : rest) | ' ' `notElem` rest =
-      if last rest == ']'
-      then Just (init rest)
-      else Nothing
-    secName xs = error' $ "bad section " ++ show xs ++ " in " ++ file
+    secName :: String -> String
+    secName sec =
+      if ' ' `elem` sec
+      then error' $ "section contains space: " ++ sec
+      else case sec of
+        ('[' : rest) ->
+          if last rest == ']'
+          then init rest
+          else error' $ "bad section " ++ sec ++ " in " ++ file
+        _ -> error' $ "section not found in " ++ file
+
+readRepoNames :: Bool -> [FilePath] -> IO [FilePath]
+readRepoNames disable files = do
+  reposEnabled <- mapM readRepo files
+  return $ map fst $ filter (selectRepo . snd) reposEnabled
+  where
+    selectRepo :: Bool -> Bool
+    selectRepo =
+      if disable then id else not
