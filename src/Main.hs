@@ -19,7 +19,6 @@ import YumRepoFile
 data Mode = Copr | Enable | Disable | List
   deriving Eq
 
--- FIXME --save-enabled
 main :: IO ()
 main = do
   simpleCmdArgs' (Just version)
@@ -27,6 +26,7 @@ main = do
     "see https://github.com/juhp/dnf-repo#readme" $
     runMain
     <$> switchWith 'n' "dryrun" "Dry run"
+    <*> switchWith 's' "save" "Save enabled state"
     <*> modeOpt
     <*> optional testingOpt
     <*> strArg "REPO"
@@ -45,11 +45,12 @@ coprRepoTemplate :: FilePath
 coprRepoTemplate =
   "_copr:copr.fedorainfracloud.org:OWNER:REPO.repo"
 
--- FIXME support other coprs
--- FIXME delete created repo file if copr doesn't exist
-runMain :: Bool -> Mode -> Maybe Testing -> String -> [String]
+-- FIXME confirm if many repos
+-- FIXME support non-fedora coprs
+-- FIXME delete created copr repo file if repo doesn't exist
+runMain :: Bool -> Bool -> Mode -> Maybe Testing -> String -> [String]
         -> IO ()
-runMain dryrun mode mtesting repo args = do
+runMain dryrun save mode mtesting repo args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     repofiles <- if mode == Copr
                  then addRepo
@@ -69,7 +70,15 @@ runMain dryrun mode mtesting repo args = do
           let repoargs =
                 concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r])
                 names
-          (if dryrun then cmdN else sudo_) "dnf" $ repoargs ++ args
+          doSudo "dnf" $ repoargs ++ args
+        when save $ do
+          putStr "Press Enter to save repo enabled state:"
+          void getLine
+          doSudo "dnf" $
+            ["config-manager",
+             if mode == Disable then "--set-disabled" else "--set-enabled"] ++
+            names
+
     where
         addRepo :: IO [FilePath]
         addRepo = do
@@ -89,6 +98,9 @@ runMain dryrun mode mtesting repo args = do
                 unless dryrun $ writeFile tmpfile repodef
                 unless dryrun $ sudo_ "cp" [tmpfile, repofile]
                 return [repofile]
+
+        doSudo :: String -> [String] -> IO ()
+        doSudo = if dryrun then cmdN else sudo_
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
