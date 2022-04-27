@@ -37,8 +37,8 @@ main = do
   where
     modeOpt =
       flagWith' Copr 'c' "add-copr" "Create repo file for copr repo" <|>
-      flagWith' Expire 'x' "expire" "Expire repo cache" <|>
-      flagWith Enable Disable 'd' "disable" "Disable repos"
+      flagWith' Disable 'd' "disable" "Disable repos" <|>
+      flagWith Enable Expire 'x' "expire" "Expire repo cache"
 
     testingOpt =
       flagWith' EnableTesting 't' "enable-testing" "Include testing repos" <|>
