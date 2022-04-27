@@ -17,7 +17,7 @@ import Paths_dnf_repo (getDataFileName, version)
 import ExpireRepos (expireRepos)
 import YumRepoFile
 
-data Mode = Copr | Enable | Disable | List | Expire
+data Mode = Copr | Enable | Disable | Expire
   deriving Eq
 
 main :: IO ()
@@ -36,7 +36,6 @@ main = do
   where
     modeOpt =
       flagWith' Copr 'c' "add-copr" "Create repo file for copr repo" <|>
-      flagWith' List 'l' "list" "List repos" <|>
       flagWith' Expire 'x' "expire" "Expire repo cache" <|>
       flagWith Enable Disable 'd' "disable" "Disable repos"
 
@@ -69,18 +68,16 @@ runMain dryrun save mode mtesting mmodular repo args = do
       then error' $ "no repo file found for " ++ repo
       else do
         names <- readRepoNames (mode == Disable) mtesting mmodular repofiles
-        if mode == List
-          then mapM_ putStrLn names
-          else do
-          when (null args) $
-            error' "please give one or more dnf arguments"
-          sleep 1
-          putStrLn ""
-          when (mode == Expire) $
-            unless dryrun $ expireRepos names
-          let repoargs =
-                concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r]) names
-            in doSudo "dnf" $ repoargs ++ args
+        mapM_ putStrLn names
+        when (null args) $
+          error' "please give one or more dnf arguments"
+        sleep 1
+        putStrLn ""
+        when (mode == Expire) $
+          unless dryrun $ expireRepos names
+        let repoargs =
+              concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r]) names
+          in doSudo "dnf" $ repoargs ++ args
         when save $ do
           putStr "Press Enter to save repo enabled state:"
           void getLine
