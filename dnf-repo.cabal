@@ -30,6 +30,7 @@ executable dnf-repo
   main-is:             Main.hs
   other-modules:       Paths_dnf_repo
                        ExpireRepos
+                       Sudo
                        YumRepoFile
   hs-source-dirs:      src
   build-depends:       base < 5,

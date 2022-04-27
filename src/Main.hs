@@ -15,6 +15,7 @@ import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
 import ExpireRepos (expireRepos)
+import Sudo
 import YumRepoFile
 
 data Mode = Copr | Enable | Disable | Expire
@@ -69,19 +70,20 @@ runMain dryrun save mode mtesting mmodular repo args = do
       else do
         names <- readRepoNames (mode == Disable) mtesting mmodular repofiles
         mapM_ putStrLn names
-        when (null args) $
+        when (null args) $ do
+          putStrLn ""
           error' "please give one or more dnf arguments"
         sleep 1
         putStrLn ""
         when (mode == Expire) $
-          unless dryrun $ expireRepos names
+          expireRepos dryrun names
         let repoargs =
               concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r]) names
-          in doSudo "dnf" $ repoargs ++ args
+          in doSudo dryrun "dnf" $ repoargs ++ args
         when save $ do
           putStr "Press Enter to save repo enabled state:"
           void getLine
-          doSudo "dnf" $
+          doSudo dryrun "dnf" $
             ["config-manager",
              if mode == Disable then "--set-disabled" else "--set-enabled"] ++
             names
@@ -103,11 +105,8 @@ runMain dryrun save mode mtesting mmodular repo args = do
               withTempDir $ \ tmpdir -> do
                 let tmpfile = tmpdir </> repofile
                 unless dryrun $ writeFile tmpfile repodef
-                unless dryrun $ sudo_ "cp" [tmpfile, repofile]
+                doSudo dryrun "cp" [tmpfile, repofile]
                 return [repofile]
-
-        doSudo :: String -> [String] -> IO ()
-        doSudo = if dryrun then cmdN else sudo_
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
