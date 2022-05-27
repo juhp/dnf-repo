@@ -32,7 +32,7 @@ main = do
     <*> modeOpt
     <*> optional testingOpt
     <*> optional modularOpt
-    <*> strArg "REPO"
+    <*> optional (strArg "REPO")
     <*> many (strArg "ARGS")
   where
     modeOpt =
@@ -58,13 +58,12 @@ coprRepoTemplate =
 -- FIXME support non-fedora coprs
 -- FIXME delete created copr repo file if repo doesn't exist
 runMain :: Bool -> Bool -> Mode -> Maybe Testing -> Maybe Modular
-        -> String -> [String] -> IO ()
-runMain dryrun save mode mtesting mmodular repo args = do
+        -> Maybe String -> [String] -> IO ()
+runMain dryrun save mode mtesting mmodular mrepo args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     repofiles <- if mode == Copr
                  then addRepo
-                 else sort . filter (replace "/" ":" repo `isInfixOf`) <$>
-                      filesWithExtension "." "repo"
+                 else getRepos
     if null repofiles
       then error' $ "no repo file found for " ++ repo
       else do
@@ -107,6 +106,15 @@ runMain dryrun save mode mtesting mmodular repo args = do
                 unless dryrun $ writeFile tmpfile repodef
                 doSudo dryrun "cp" [tmpfile, repofile]
                 return [repofile]
+
+        getRepos :: IO [String]
+        getRepos = do
+          files <- filesWithExtension "." "repo"
+          return . sort $
+            case mrepo of
+              Nothing -> files
+            Just repo ->
+              filter (replace "/" ":" repo `isInfixOf`) files
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
