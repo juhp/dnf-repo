@@ -4,12 +4,14 @@
 
 module Main (main) where
 
-import Control.Monad
+import Control.Monad.Extra
 import Data.List.Extra
+import Data.Maybe (mapMaybe)
 import SimpleCmd
 import SimpleCmdArgs
 import System.Directory
 import System.FilePath
+import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 import System.IO.Extra (withTempDir)
 import System.Time.Extra (sleep)
 
@@ -18,9 +20,6 @@ import ExpireRepos (expireRepos)
 import Sudo
 import YumRepoFile
 
-data Mode = Copr | Enable | Disable | Expire
-  deriving Eq
-
 main :: IO ()
 main = do
   simpleCmdArgs' (Just version)
@@ -28,93 +27,108 @@ main = do
     "see https://github.com/juhp/dnf-repo#readme" $
     runMain
     <$> switchWith 'n' "dryrun" "Dry run"
-    <*> switchWith 's' "save" "Save enabled state"
+    <*> switchWith 'D' "debug" "Debug output"
+    <*> switchWith 's' "save" "Save the repo enable/disable state"
     <*> modeOpt
     <*> optional testingOpt
     <*> optional modularOpt
-    <*> optional (strArg "REPO")
-    <*> many (strArg "ARGS")
+    <*> many (strArg "[REPOPAT] ARGS")
   where
     modeOpt =
-      flagWith' Copr 'c' "add-copr" "Create repo file for copr repo" <|>
-      flagWith' Disable 'd' "disable" "Disable repos" <|>
-      flagWith Enable Expire 'x' "expire" "Expire repo cache"
+      AddCopr <$> strOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
+      DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
+      EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
+      ExpireRepo <$> strOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
+      pure Default
 
     testingOpt =
-      flagWith' EnableTesting 't' "enable-testing" "Include testing repos" <|>
-      flagWith' DisableTesting 'T' "disable-testing" "Exclude testing repos"
+      flagWith' EnableTesting 't' "include-testing" "Enable testing repos" <|>
+      flagWith' DisableTesting 'T' "exclude-testing" "Disable testing repos"
 
     modularOpt =
-      flagWith' EnableModular 'm' "enable-modular" "Include modular repos" <|>
-      flagWith' DisableModular 'M' "disable-modular" "Exclude modular repos"
+      flagWith' EnableModular 'm' "include-modular" "Enable modular repos" <|>
+      flagWith' DisableModular 'M' "exclude-modular" "Disable modular repos"
 
 coprRepoTemplate :: FilePath
-coprRepoTemplate =
-  "_copr:copr.fedorainfracloud.org:OWNER:REPO.repo"
+coprRepoTemplate = "_copr:SERVER:OWNER:REPO.repo"
 
 -- FIXME both enabling and disabled at the same time
--- FIXME confirm if many repos
--- FIXME --disable-non-core (modular,testing,cisco, etc)
--- FIXME support non-fedora coprs
--- FIXME delete created copr repo file if repo doesn't exist
-runMain :: Bool -> Bool -> Mode -> Maybe Testing -> Maybe Modular
-        -> Maybe String -> [String] -> IO ()
-runMain dryrun save mode mtesting mmodular mrepo args = do
+-- FIXME --enable-all-coprs (for updating etc)
+-- FIXME confirm repos
+-- FIXME --disable-non-cores (modular,testing,cisco, etc)
+runMain :: Bool -> Bool -> Bool -> Mode -> Maybe Testing -> Maybe Modular
+        -> [String] -> IO ()
+runMain dryrun debug save mode mtesting mmodular args = do
+  hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
-    repofiles <- if mode == Copr
-                 then addRepo
-                 else getRepos
-    if null repofiles
-      then error' $ "no repo file found for " ++ repo
-      else do
-        names <- readRepoNames (mode == Disable) mtesting mmodular repofiles
-        mapM_ putStrLn names
-        sleep 1
+    case mode of
+      AddCopr copr -> addCoprRepo copr
+      _ -> return ()
+    repofiles <- filesWithExtension "." "repo"
+--    when debug $ print repofiles
+    -- if null args
+    --   then do
+    --   repos <- getRepos Nothing
+    --   unless (null repos) $ do
+    --     putStrLn "Available repos:"
+    --     mapM_ putStrLn repos
+    --   else do
+    nameStates <- sort <$> mapM readRepo repofiles
+--        readRepoNames debug (mode == Disable) mtesting mmodular repofiles
+    let repoActs = mapMaybe (selectRepo debug mode mtesting mmodular) nameStates
+    mapM_ print repoActs
+    case mode of
+      ExpireRepo _ -> do
         putStrLn ""
-        when (mode == Expire) $
-          expireRepos dryrun names
-        when (null args) $ do
-          putStrLn ""
-          error' "please give one or more dnf arguments"
-        let repoargs =
-              concatMap (\r -> [if mode == Disable then "--disablerepo" else "--enablerepo", r]) names
-          in doSudo dryrun "dnf" $ repoargs ++ args
-        when save $ do
-          putStr "Press Enter to save repo enabled state:"
-          void getLine
-          doSudo dryrun "dnf" $
-            ["config-manager",
-             if mode == Disable then "--set-disabled" else "--set-enabled"] ++
-            names
-
+        expireRepos dryrun $ mapMaybe expiring repoActs
+      _ -> return ()
+    if null args
+      then do
+      mapM_ print nameStates
+      else do
+      sleep 1
+      putStrLn ""
+      let repoargs = concatMap changeRepo repoActs
+        in doSudo dryrun "dnf" $ repoargs ++ args
+      when save $ do
+        putStr "Press Enter to save repo enabled state:"
+        void getLine
+        doSudo dryrun "dnf" $
+          "config-manager" :
+          concatMap saveRepo repoActs
     where
-        addRepo :: IO [FilePath]
-        addRepo = do
-          case stripInfix "/" repo of
-            Nothing -> error' $ "invalid copr: " ++ repo
-            Just (copr_owner,copr_repo) -> do
-              template <- getDataFileName coprRepoTemplate
-              repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
-              let repofile = replace "OWNER" copr_owner $
-                             replace "REPO" copr_repo coprRepoTemplate
-              exists <- doesFileExist repofile
-              if exists
-                then error' $ "repo already defined: " ++ repofile
-                else putStrLn $ "Setting up copr repo " ++ repo
-              withTempDir $ \ tmpdir -> do
-                let tmpfile = tmpdir </> repofile
-                unless dryrun $ writeFile tmpfile repodef
-                doSudo dryrun "cp" [tmpfile, repofile]
-                return [repofile]
+      -- FIXME pull non-fedora copr repo file
+      -- FIXME delete created copr repo file if repo doesn't exist
+      addCoprRepo :: String -> IO ()
+      addCoprRepo repo = do
+        case stripInfix "/" repo of
+          Nothing -> error' $ "invalid copr: " ++ repo
+          Just (copr_owner,copr_repo) -> do
+            template <- getDataFileName coprRepoTemplate
+            repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
+            let repofile = replace "OWNER" copr_owner $
+                           replace "REPO" copr_repo coprRepoTemplate
+            exists <- doesFileExist repofile
+            if exists
+              then error' $ "repo already defined: " ++ repofile
+              else putStrLn $ "Setting up copr repo " ++ repo
+            withTempDir $ \ tmpdir -> do
+              let tmpfile = tmpdir </> repofile
+              unless dryrun $ writeFile tmpfile repodef
+              doSudo dryrun "cp" [tmpfile, repofile]
 
-        getRepos :: IO [String]
-        getRepos = do
-          files <- filesWithExtension "." "repo"
-          return . sort $
-            case mrepo of
-              Nothing -> files
-            Just repo ->
-              filter (replace "/" ":" repo `isInfixOf`) files
+        -- getRepos :: IO [String]
+        -- getRepos =
+          -- files <-
+
+          -- when debug $ print files
+          -- return . sort $
+          --   case mrepo of
+          --     Nothing ->
+          --       filter (selectTest (mode == Disable) mtesting) $
+          --       filter (selectModular (mode == Disable) mmodular) files
+          --     Just repo ->
+          --       filter (replace "/" ":" repo `isInfixOf`) files
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]

@@ -1,53 +1,93 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module YumRepoFile (
-  readRepoNames,
+  Mode(..),
+  readRepo,
+  selectRepo,
   Modular(..),
-  Testing(..)
+  Testing(..),
+  changeRepo,
+  saveRepo,
+  expiring
   )
 where
 
-import Data.List.Extra (isPrefixOf, isInfixOf, trim)
+import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, replace, trim)
 import SimpleCmd (error')
 
-readRepoNames :: Bool -> Maybe Testing -> Maybe Modular -> [FilePath]
-              -> IO [FilePath]
-readRepoNames disable mtesting mmodular files = do
-  reposEnabled <- mapM readRepo files
-  return $
-    map fst $
-    filter (selectTest . fst) $
-    filter (selectModular . fst) $
-    filter (selectEnable . snd) reposEnabled
-  where
-    readRepo :: FilePath -> IO (String,Bool)
-    readRepo file =
-      parseIni file . lines <$> readFile file
+readRepo :: FilePath -> IO (String,Bool)
+readRepo file =
+  parseIni file . lines <$> readFile file
 
-    selectEnable :: Bool -> Bool
-    selectEnable = if disable then id else not
+data Mode = AddCopr String | EnableRepo String | DisableRepo String
+          | ExpireRepo String | Default
+  deriving Eq
 
-    selectModular :: String -> Bool
-    selectModular name =
-      if "modular" `isInfixOf` name
-      then case mmodular of
-        Nothing -> False
-        Just enable -> selectEnable (enable == DisableModular)
-      else True
+data ChangeEnable = Disable String | Enable String | Expire String
+  deriving (Eq,Ord,Show)
 
-    selectTest :: String -> Bool
-    selectTest name =
-      if "testing" `isInfixOf` name
-      then case mtesting of
-        Nothing -> False
-        Just enable -> selectEnable (enable == DisableTesting)
-      else True
+changeRepo :: ChangeEnable -> [String]
+changeRepo (Disable r) = ["--disablerepo", r]
+changeRepo (Enable r) = ["--enablerepo", r]
+changeRepo _ = []
+
+saveRepo :: ChangeEnable -> [String]
+saveRepo (Disable r) = ["--disable", r]
+saveRepo (Enable r) = ["--enable", r]
+saveRepo _ = []
+
+expiring :: ChangeEnable -> Maybe String
+expiring (Expire r) = Just r
+expiring _ = Nothing
 
 data Modular = EnableModular | DisableModular
   deriving Eq
 
 data Testing = EnableTesting | DisableTesting
   deriving Eq
+
+selectRepo :: Bool -> Mode -> Maybe Testing -> Maybe Modular
+           -> (String,Bool) -> Maybe ChangeEnable
+selectRepo _debug mode mtesting mmodular (name,enabled) =
+  case mode of
+    AddCopr repo -> if replace "/" ":" repo `isSuffixOf` name && not enabled
+                    then Just (Enable name)
+                    else selectOther
+    EnableRepo pat -> if pat `isInfixOf` name && not enabled
+                  then Just (Enable name)
+                  else selectOther
+    DisableRepo pat -> if pat `isInfixOf` name && enabled
+                   then Just (Disable name)
+                   else selectOther
+    ExpireRepo pat -> if pat `isInfixOf` name
+                  then Just (Expire name)
+                  else Nothing
+    _ -> selectOther
+  where
+    selectOther :: Maybe ChangeEnable
+    selectOther
+      | "modular" `isSuffixOf` name =
+        case mmodular of
+          Nothing -> Nothing
+          Just include ->
+            case include of
+              EnableModular | not enabled ->
+                               if "testing" `isInfixOf` name
+                               then if mtesting == Just EnableTesting
+                                    then Just (Enable name)
+                                    else Nothing
+                               else Just (Enable name)
+              DisableModular | enabled -> Just (Disable name)
+              _ -> Nothing
+      | "testing" `isInfixOf` name =
+          case mtesting of
+            Nothing -> Nothing
+            Just include ->
+              case include of
+                EnableTesting | not enabled -> Just (Enable name)
+                DisableTesting | enabled -> Just (Disable name)
+                _ -> Nothing
+      | otherwise = Nothing
 
 parseIni :: FilePath -> [String] -> (String,Bool)
 parseIni file [] = error' $ "empty ini file: " ++ file
