@@ -1,5 +1,5 @@
 name:                dnf-repo
-version:             0.1.0
+version:             0.0.1
 synopsis:            One line summary
 description:
         Short paragraph here
@@ -12,8 +12,8 @@ category:            Utility
 homepage:            https://github.com/juhp/dnf-repo
 bug-reports:         https://github.com/juhp/dnf-repo/issues
 build-type:          Simple
---  extra-doc-files:     README.md
 --                       ChangeLog.md
+extra-doc-files:     README.md
 cabal-version:       2.0
 -- tested-with:         GHC == 8.6.5
 --                        | == 8.8.4
