@@ -17,27 +17,31 @@ Also options to enable/disable testing/modular repos.
 ## Help
 
 ```shellsession
-$ dnf-repo
+$ dnf-repo --help
 DNF wrapper repo tool
 
-Usage: dnf-repo [--version] [-n|--dryrun] [-s|--save]
-                [(-c|--add-copr) | (-d|--disable) | (-x|--expire)]
-                [(-t|--enable-testing) | (-T|--disable-testing)]
-                [(-m|--enable-modular) | (-M|--disable-modular)] REPO [ARGS]
+Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-s|--save]
+                [(-c|--add-copr COPR) | (-d|--disable REPOPAT) |
+                  (-e|--enable REPOPAT) | (-x|--expire REPOPAT)]
+                [(-t|--include-testing) | (-T|--exclude-testing)]
+                [(-m|--include-modular) | (-M|--exclude-modular)]
+                [[REPOPAT] ARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:
   -h,--help                Show this help text
   --version                Show version
   -n,--dryrun              Dry run
-  -s,--save                Save enabled state
-  -c,--add-copr            Create repo file for copr repo
-  -d,--disable             Disable repos
-  -x,--expire              Expire repo cache
-  -t,--enable-testing      Include testing repos
-  -T,--disable-testing     Exclude testing repos
-  -m,--enable-modular      Include modular repos
-  -M,--disable-modular     Exclude modular repos
+  -D,--debug               Debug output
+  -s,--save                Save the repo enable/disable state
+  -c,--add-copr COPR       Create repo file for copr repo
+  -d,--disable REPOPAT     Disable repos
+  -e,--enable REPOPAT      Enable repos
+  -x,--expire REPOPAT      Expire repo cache
+  -t,--include-testing     Enable testing repos
+  -T,--exclude-testing     Disable testing repos
+  -m,--include-modular     Enable modular repos
+  -M,--exclude-modular     Disable modular repos
 ```
 
 ## Usage
