@@ -45,16 +45,27 @@ Available options:
 ```
 
 ## Usage
+List repos:
+```shellsession
+$ dnf-repo
+```
+
+Update with --enable-testing:
+```shellsession
+$ sudo dnf-repo -t update
+```
+
 List disabled copr repos:
 ```shellsession
-$ dnf-tool -n copr
+$ dnf-repo -e copr
 ```
 
 Disable copr repos for update:
 ```shellsession
-$ dnf-tool -d copr update
+$ sudo dnf-repo -d copr update
 ```
 
 Disable modular repos permanently:
 ```shellsession
-$ dnf-tool --disable-modular --save
+$ sudo dnf-repo --disable-modular --save
+```
