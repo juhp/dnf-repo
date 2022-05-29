@@ -42,12 +42,12 @@ main = do
       pure Default
 
     testingOpt =
-      flagWith' EnableTesting 't' "include-testing" "Enable testing repos" <|>
-      flagWith' DisableTesting 'T' "exclude-testing" "Disable testing repos"
+      flagWith' EnableTesting 't' "enable-testing" "Enable testing repos" <|>
+      flagWith' DisableTesting 'T' "disable-testing" "Disable testing repos"
 
     modularOpt =
-      flagWith' EnableModular 'm' "include-modular" "Enable modular repos" <|>
-      flagWith' DisableModular 'M' "exclude-modular" "Disable modular repos"
+      flagWith' EnableModular 'm' "enable-modular" "Enable modular repos" <|>
+      flagWith' DisableModular 'M' "disable-modular" "Disable modular repos"
 
 coprRepoTemplate :: FilePath
 coprRepoTemplate = "_copr:SERVER:OWNER:REPO.repo"
