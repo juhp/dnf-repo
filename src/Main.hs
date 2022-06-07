@@ -50,7 +50,7 @@ main = do
       flagWith' DisableModular 'M' "disable-modular" "Disable modular repos"
 
 coprRepoTemplate :: FilePath
-coprRepoTemplate = "_copr:SERVER:OWNER:REPO.repo"
+coprRepoTemplate = "_copr:copr.fedorainfracloud.org:OWNER:REPO.repo"
 
 -- FIXME both enabling and disabled at the same time
 -- FIXME --enable-all-coprs (for updating etc)
