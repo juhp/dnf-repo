@@ -90,12 +90,12 @@ runMain dryrun debug save mode mtesting mmodular args = do
       putStrLn ""
       let repoargs = concatMap changeRepo repoActs
         in doSudo dryrun "dnf" $ repoargs ++ args
-      when save $ do
-        putStr "Press Enter to save repo enabled state:"
-        void getLine
-        doSudo dryrun "dnf" $
-          "config-manager" :
-          concatMap saveRepo repoActs
+    when save $ do
+      putStr "Press Enter to save repo enabled state:"
+      void getLine
+      doSudo dryrun "dnf" $
+        "config-manager" :
+        concatMap saveRepo repoActs
     where
       -- FIXME pull non-fedora copr repo file
       -- FIXME delete created copr repo file if repo doesn't exist
