@@ -77,7 +77,9 @@ runMain dryrun debug save mode mtesting mmodular args = do
     nameStates <- sort <$> mapM readRepo repofiles
 --        readRepoNames debug (mode == Disable) mtesting mmodular repofiles
     let repoActs = mapMaybe (selectRepo debug mode mtesting mmodular) nameStates
-    mapM_ print repoActs
+    unless (null repoActs) $ do
+      mapM_ print repoActs
+      putStrLn ""
     case mode of
       ExpireRepo _ -> do
         putStrLn ""
@@ -92,6 +94,7 @@ runMain dryrun debug save mode mtesting mmodular args = do
         doSudo dryrun "dnf" $
           "config-manager" :
           concatMap saveRepo repoActs
+        putStrLn ""
     if null args
       then do
       listRepos $ map (updateState repoActs) nameStates
@@ -128,6 +131,7 @@ runMain dryrun debug save mode mtesting mmodular args = do
               bimap (map fst) (map fst) $ partition snd repoStates
         putStrLn "Enabled:"
         mapM_ putStrLn on
+        putStrLn ""
         putStrLn "Disabled:"
         mapM_ putStrLn off
 
