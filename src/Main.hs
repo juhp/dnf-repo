@@ -5,6 +5,7 @@
 module Main (main) where
 
 import Control.Monad.Extra
+import Data.Bifunctor (bimap)
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
 import SimpleCmd
@@ -93,7 +94,7 @@ runMain dryrun debug save mode mtesting mmodular args = do
           concatMap saveRepo repoActs
     if null args
       then do
-      mapM_ print nameStates
+      listRepos $ map (updateState repoActs) nameStates
       else do
       sleep 1
       putStrLn ""
@@ -119,6 +120,16 @@ runMain dryrun debug save mode mtesting mmodular args = do
               let tmpfile = tmpdir </> repofile
               unless dryrun $ writeFile tmpfile repodef
               doSudo dryrun "cp" [tmpfile, repofile]
+
+      listRepos :: [RepoState] -> IO ()
+      listRepos repoStates = do
+        let (on,off) =
+              -- can't this be simplified?
+              bimap (map fst) (map fst) $ partition snd repoStates
+        putStrLn "Enabled:"
+        mapM_ putStrLn on
+        putStrLn "Disabled:"
+        mapM_ putStrLn off
 
         -- getRepos :: IO [String]
         -- getRepos =

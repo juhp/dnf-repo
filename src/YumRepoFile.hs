@@ -3,11 +3,13 @@
 module YumRepoFile (
   Mode(..),
   readRepo,
+  RepoState,
   selectRepo,
   Modular(..),
   Testing(..),
   changeRepo,
   saveRepo,
+  updateState,
   expiring
   )
 where
@@ -37,6 +39,14 @@ saveRepo _ = []
 expiring :: ChangeEnable -> Maybe String
 expiring (Expire r) = Just r
 expiring _ = Nothing
+
+updateState :: [ChangeEnable] -> (String,Bool) -> (String,Bool)
+updateState [] rs = rs
+updateState (ce:ces) re@(repo,enabled) =
+  case ce of
+    Disable r | r == repo && enabled -> (repo,False)
+    Enable r | r == repo && not enabled -> (repo,True)
+    _ -> updateState ces re
 
 data Modular = EnableModular | DisableModular
   deriving Eq
