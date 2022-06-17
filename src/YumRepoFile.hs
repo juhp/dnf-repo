@@ -15,9 +15,7 @@ where
 import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, replace, trim)
 import SimpleCmd (error')
 
-readRepo :: FilePath -> IO (String,Bool)
-readRepo file =
-  parseIni file . lines <$> readFile file
+type RepoState = (String,Bool)
 
 data Mode = AddCopr String | EnableRepo String | DisableRepo String
           | ExpireRepo String | Default
@@ -47,7 +45,7 @@ data Testing = EnableTesting | DisableTesting
   deriving Eq
 
 selectRepo :: Bool -> Mode -> Maybe Testing -> Maybe Modular
-           -> (String,Bool) -> Maybe ChangeEnable
+           -> RepoState -> Maybe ChangeEnable
 selectRepo _debug mode mtesting mmodular (name,enabled) =
   case mode of
     AddCopr repo -> if replace "/" ":" repo `isSuffixOf` name && not enabled
@@ -89,12 +87,17 @@ selectRepo _debug mode mtesting mmodular (name,enabled) =
                 _ -> Nothing
       | otherwise = Nothing
 
-parseIni :: FilePath -> [String] -> (String,Bool)
-parseIni file [] = error' $ "empty ini file: " ++ file
-parseIni file (l:ls) =
+readRepo :: FilePath -> IO RepoState
+readRepo file =
+  parseRepo file . lines <$> readFile file
+
+-- was called parseIni
+parseRepo :: FilePath -> [String] -> RepoState
+parseRepo file [] = error' $ "empty ini file: " ++ file
+parseRepo file (l:ls) =
   case trim l of
-    "" -> parseIni file ls
-    ('#':_) -> parseIni file ls
+    "" -> parseRepo file ls
+    ('#':_) -> parseRepo file ls
     sec ->
       let section = secName sec
           enabled =
