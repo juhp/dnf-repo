@@ -82,6 +82,15 @@ runMain dryrun debug save mode mtesting mmodular args = do
         putStrLn ""
         expireRepos dryrun $ mapMaybe expiring repoActs
       _ -> return ()
+    when save $
+      if null repoActs
+        then putStrLn "no changes to save\n"
+        else do
+        putStr "Press Enter to save repo enabled state:"
+        void getLine
+        doSudo dryrun "dnf" $
+          "config-manager" :
+          concatMap saveRepo repoActs
     if null args
       then do
       mapM_ print nameStates
@@ -90,12 +99,6 @@ runMain dryrun debug save mode mtesting mmodular args = do
       putStrLn ""
       let repoargs = concatMap changeRepo repoActs
         in doSudo dryrun "dnf" $ repoargs ++ args
-    when save $ do
-      putStr "Press Enter to save repo enabled state:"
-      void getLine
-      doSudo dryrun "dnf" $
-        "config-manager" :
-        concatMap saveRepo repoActs
     where
       -- FIXME pull non-fedora copr repo file
       -- FIXME delete created copr repo file if repo doesn't exist
