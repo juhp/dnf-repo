@@ -37,6 +37,7 @@ main = do
   where
     modeOpt =
       AddCopr <$> strOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
+      AddKoji <$> strOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo" <|>
       DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> strOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
@@ -53,6 +54,9 @@ main = do
 coprRepoTemplate :: FilePath
 coprRepoTemplate = "_copr:copr.fedorainfracloud.org:OWNER:REPO.repo"
 
+kojiRepoTemplate :: FilePath
+kojiRepoTemplate = "koji-REPO.repo"
+
 -- FIXME both enabling and disabled at the same time
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos
@@ -64,6 +68,7 @@ runMain dryrun debug save mode mtesting mmodular args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     case mode of
       AddCopr copr -> addCoprRepo copr
+      AddKoji repo -> addKojiRepo repo
       _ -> return ()
     repofiles <- filesWithExtension "." "repo"
 --    when debug $ print repofiles
@@ -123,6 +128,20 @@ runMain dryrun debug save mode mtesting mmodular args = do
               let tmpfile = tmpdir </> repofile
               unless dryrun $ writeFile tmpfile repodef
               doSudo dryrun "cp" [tmpfile, repofile]
+
+      addKojiRepo :: String -> IO ()
+      addKojiRepo repo = do
+        template <- getDataFileName kojiRepoTemplate
+        repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
+        let repofile = replace "REPO" repo kojiRepoTemplate
+        exists <- doesFileExist repofile
+        if exists
+          then error' $ "repo already defined: " ++ repofile
+          else putStrLn $ "Setting up koji repo " ++ repo
+        withTempDir $ \ tmpdir -> do
+          let tmpfile = tmpdir </> repofile
+          unless dryrun $ writeFile tmpfile repodef
+          doSudo dryrun "cp" [tmpfile, repofile]
 
       listRepos :: [RepoState] -> IO ()
       listRepos repoStates = do

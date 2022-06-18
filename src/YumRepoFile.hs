@@ -19,7 +19,8 @@ import SimpleCmd (error')
 
 type RepoState = (String,Bool)
 
-data Mode = AddCopr String | EnableRepo String | DisableRepo String
+data Mode = AddCopr String | AddKoji String
+          | EnableRepo String | DisableRepo String
           | ExpireRepo String | Default
   deriving Eq
 
@@ -59,6 +60,9 @@ selectRepo :: Bool -> Mode -> Maybe Testing -> Maybe Modular
 selectRepo _debug mode mtesting mmodular (name,enabled) =
   case mode of
     AddCopr repo -> if replace "/" ":" repo `isSuffixOf` name && not enabled
+                    then Just (Enable name)
+                    else selectOther
+    AddKoji repo -> if repo `isSuffixOf` name && not enabled
                     then Just (Enable name)
                     else selectOther
     EnableRepo pat -> if pat `isInfixOf` name && not enabled

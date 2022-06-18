@@ -21,6 +21,7 @@ cabal-version:       2.0
 --                        | == 9.0.2
 data-dir:            data
 data-files:          _copr:copr.fedorainfracloud.org:OWNER:REPO.repo
+                     koji-REPO.repo
 
 source-repository head
   type:                git

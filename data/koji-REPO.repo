@@ -1,0 +1,10 @@
+[koji-@REPO@]
+name=Fedora - Koji @REPO@
+failovermethod=priority
+baseurl=https://kojipkgs.fedoraproject.org/repos/@REPO@/latest/x86_64/
+enabled=0
+metadata_expire=1h
+repo_gpgcheck=0
+type=rpm
+gpgcheck=0
+skip_if_unavailable=False
