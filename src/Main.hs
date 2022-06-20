@@ -72,15 +72,7 @@ runMain dryrun debug save mode mtesting mmodular args = do
       _ -> return ()
     repofiles <- filesWithExtension "." "repo"
 --    when debug $ print repofiles
-    -- if null args
-    --   then do
-    --   repos <- getRepos Nothing
-    --   unless (null repos) $ do
-    --     putStrLn "Available repos:"
-    --     mapM_ putStrLn repos
-    --   else do
     nameStates <- sort <$> mapM readRepo repofiles
---        readRepoNames debug (mode == Disable) mtesting mmodular repofiles
     let repoActs = mapMaybe (selectRepo debug mode mtesting mmodular) nameStates
     unless (null repoActs) $ do
       mapM_ print repoActs
@@ -153,19 +145,6 @@ runMain dryrun debug save mode mtesting mmodular args = do
         putStrLn ""
         putStrLn "Disabled:"
         mapM_ putStrLn off
-
-        -- getRepos :: IO [String]
-        -- getRepos =
-          -- files <-
-
-          -- when debug $ print files
-          -- return . sort $
-          --   case mrepo of
-          --     Nothing ->
-          --       filter (selectTest (mode == Disable) mtesting) $
-          --       filter (selectModular (mode == Disable) mmodular) files
-          --     Just repo ->
-          --       filter (replace "/" ":" repo `isInfixOf`) files
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
