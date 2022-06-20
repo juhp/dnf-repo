@@ -52,22 +52,25 @@ List repos:
 $ dnf-repo
 ```
 
-Update with --enable-testing:
+Update with testing repos:
 ```shellsession
-$ sudo dnf-repo -t update
+$ dnf-repo -t update
 ```
 
-List disabled copr repos:
+List disabled copr repos (actually shows "copr" repos that would be enabled):
 ```shellsession
 $ dnf-repo -e copr
 ```
 
-Disable copr repos for update:
+Disable all copr repos for update:
 ```shellsession
-$ sudo dnf-repo -d copr update
+$ dnf-repo -d copr update
 ```
 
 Disable modular repos permanently:
 ```shellsession
-$ sudo dnf-repo --disable-modular --save
+$ dnf-repo --disable-modular --save
 ```
+
+Note that sudo is used implicitly when needed:
+there is no need to run dnf-repo with sudo.
