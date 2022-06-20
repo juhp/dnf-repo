@@ -36,7 +36,7 @@ main = do
     <*> many (strArg "DNFARGS")
   where
     modeOpt =
-      AddCopr <$> strOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
+      AddCopr . replace "/" ":" <$> strOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
       AddKoji <$> strOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo" <|>
       DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
@@ -105,7 +105,7 @@ runMain dryrun debug save mode mtesting mmodular args = do
       -- FIXME delete created copr repo file if repo doesn't exist
       addCoprRepo :: String -> IO ()
       addCoprRepo repo = do
-        case stripInfix "/" repo of
+        case stripInfix ":" repo of
           Nothing -> error' $ "invalid copr: " ++ repo
           Just (copr_owner,copr_repo) -> do
             template <- getDataFileName coprRepoTemplate

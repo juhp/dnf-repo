@@ -14,7 +14,7 @@ module YumRepoFile (
   )
 where
 
-import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, replace, trim)
+import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, trim)
 import SimpleCmd (error')
 
 type RepoState = (String,Bool)
@@ -59,7 +59,7 @@ selectRepo :: Bool -> Mode -> Maybe Testing -> Maybe Modular
            -> RepoState -> Maybe ChangeEnable
 selectRepo _debug mode mtesting mmodular (name,enabled) =
   case mode of
-    AddCopr repo -> if replace "/" ":" repo `isSuffixOf` name && not enabled
+    AddCopr repo -> if repo `isSuffixOf` name && not enabled
                     then Just (Enable name)
                     else selectOther
     AddKoji repo -> if repo `isSuffixOf` name && not enabled
