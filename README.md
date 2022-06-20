@@ -74,3 +74,8 @@ $ dnf-repo --disable-modular --save
 
 Note that sudo is used implicitly when needed:
 there is no need to run dnf-repo with sudo.
+
+## Installation
+
+A copr repo is available:
+<https://copr.fedorainfracloud.org/coprs/petersen/dnf-repo/>
