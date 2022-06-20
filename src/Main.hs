@@ -33,7 +33,7 @@ main = do
     <*> modeOpt
     <*> optional testingOpt
     <*> optional modularOpt
-    <*> many (strArg "[REPOPAT] ARGS")
+    <*> many (strArg "DNFARGS")
   where
     modeOpt =
       AddCopr <$> strOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
