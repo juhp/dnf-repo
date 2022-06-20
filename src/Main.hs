@@ -52,7 +52,7 @@ main = do
       flagWith' DisableModular 'M' "disable-modular" "Disable modular repos"
 
 coprRepoTemplate :: FilePath
-coprRepoTemplate = "_copr:copr.fedorainfracloud.org:OWNER:REPO.repo"
+coprRepoTemplate = "copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo"
 
 kojiRepoTemplate :: FilePath
 kojiRepoTemplate = "koji-REPO.repo"
@@ -110,7 +110,9 @@ runMain dryrun debug save mode mtesting mmodular args = do
           Just (copr_owner,copr_repo) -> do
             template <- getDataFileName coprRepoTemplate
             repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
-            let repofile = replace "OWNER" copr_owner $
+            let repofile = ("_copr:" ++) $
+                           replace "COLON" ":" $
+                           replace "OWNER" copr_owner $
                            replace "REPO" copr_repo coprRepoTemplate
             exists <- doesFileExist repofile
             if exists
