@@ -1,4 +1,3 @@
 - cache copr history etc
 - support arbitray copr
-- delete unowned .repo (with confirmation)
 - delete non-existant repos

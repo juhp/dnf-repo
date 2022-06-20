@@ -10,21 +10,23 @@ module YumRepoFile (
   changeRepo,
   saveRepo,
   updateState,
-  expiring
+  expiring,
+  deleting
   )
 where
 
 import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, trim)
 import SimpleCmd (error')
 
-type RepoState = (String,Bool)
+type RepoState = (String,Bool,FilePath)
 
 data Mode = AddCopr String | AddKoji String
           | EnableRepo String | DisableRepo String
-          | ExpireRepo String | Default
+          | ExpireRepo String | DeleteRepo String | Default
   deriving Eq
 
 data ChangeEnable = Disable String | Enable String | Expire String
+                  | Delete FilePath
   deriving (Eq,Ord,Show)
 
 changeRepo :: ChangeEnable -> [String]
@@ -41,12 +43,16 @@ expiring :: ChangeEnable -> Maybe String
 expiring (Expire r) = Just r
 expiring _ = Nothing
 
-updateState :: [ChangeEnable] -> (String,Bool) -> (String,Bool)
+deleting :: ChangeEnable -> Maybe String
+deleting (Delete r) = Just r
+deleting _ = Nothing
+
+updateState :: [ChangeEnable] -> RepoState -> RepoState
 updateState [] rs = rs
-updateState (ce:ces) re@(repo,enabled) =
+updateState (ce:ces) re@(repo,enabled,file) =
   case ce of
-    Disable r | r == repo && enabled -> (repo,False)
-    Enable r | r == repo && not enabled -> (repo,True)
+    Disable r | r == repo && enabled -> (repo,False,file)
+    Enable r | r == repo && not enabled -> (repo,True,file)
     _ -> updateState ces re
 
 data Modular = EnableModular | DisableModular
@@ -57,7 +63,7 @@ data Testing = EnableTesting | DisableTesting
 
 selectRepo :: Bool -> Mode -> Maybe Testing -> Maybe Modular
            -> RepoState -> Maybe ChangeEnable
-selectRepo _debug mode mtesting mmodular (name,enabled) =
+selectRepo _debug mode mtesting mmodular (name,enabled,file) =
   case mode of
     AddCopr repo -> if repo `isSuffixOf` name && not enabled
                     then Just (Enable name)
@@ -73,6 +79,11 @@ selectRepo _debug mode mtesting mmodular (name,enabled) =
                    else selectOther
     ExpireRepo pat -> if pat `isInfixOf` name
                   then Just (Expire name)
+                  else Nothing
+    DeleteRepo pat -> if pat `isInfixOf` name
+                  then if enabled
+                       then error' $ "disable repo before deleting: " ++ name
+                       else Just (Delete file)
                   else Nothing
     _ -> selectOther
   where
@@ -122,7 +133,7 @@ parseRepo file (l:ls) =
                   "enabled=1" -> True
                   "enabled=0" -> False
                   _ -> error' $ "unknown enabled state " ++ e ++ " for " ++ section
-      in (section,enabled)
+      in (section,enabled,file)
   where
     secName :: String -> String
     secName sec =

@@ -8,6 +8,7 @@ import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
+import Data.Tuple.Extra (fst3,snd3)
 import SimpleCmd
 import SimpleCmdArgs
 import System.Directory
@@ -41,6 +42,7 @@ main = do
       DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> strOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
+      DeleteRepo <$> strOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
       pure Default
 
     testingOpt =
@@ -81,13 +83,14 @@ runMain dryrun debug save mode mtesting mmodular args = do
       ExpireRepo _ -> do
         putStrLn ""
         expireRepos dryrun $ mapMaybe expiring repoActs
+      DeleteRepo _ ->
+        mapM_ deleteRepos $ mapMaybe deleting repoActs
       _ -> return ()
     when save $
       if null repoActs
         then putStrLn "no changes to save\n"
         else do
-        putStr "Press Enter to save repo enabled state:"
-        void getLine
+        prompt_ "Press Enter to save repo enabled state"
         doSudo dryrun "dnf" $
           "config-manager" :
           concatMap saveRepo repoActs
@@ -141,15 +144,43 @@ runMain dryrun debug save mode mtesting mmodular args = do
       listRepos repoStates = do
         let (on,off) =
               -- can't this be simplified?
-              bimap (map fst) (map fst) $ partition snd repoStates
+              bimap (map fst3) (map fst3) $ partition snd3 repoStates
         putStrLn "Enabled:"
         mapM_ putStrLn on
         putStrLn ""
         putStrLn "Disabled:"
         mapM_ putStrLn off
 
+      deleteRepos :: FilePath -> IO ()
+      deleteRepos repofile = do
+        mowned <- cmdMaybe "rpm" ["-qf", "/etc/yum.repos.d" </> repofile]
+        case mowned of
+          Just owner -> error' $ repofile +-+ "owned by" +-+ owner
+          Nothing -> do
+            ok <- yesno $ "Remove " ++ takeFileName repofile
+            when ok $ doSudo dryrun "rm" [repofile]
+
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
   filter (ext `isExtensionOf`) <$> listDirectory dir
 #endif
+
+prompt :: String -> IO String
+prompt desc = do
+  putStr $ desc ++ ": "
+  getLine
+
+prompt_ :: String -> IO ()
+prompt_ desc = do
+  void $ prompt desc
+
+yesno :: String -> IO Bool
+yesno desc = do
+  inp <- prompt $ desc ++ "? [y/n]"
+  case lower inp of
+    "y" -> return True
+    "yes" -> return True
+    "n" -> return False
+    "no" -> return False
+    _ ->  yesno desc

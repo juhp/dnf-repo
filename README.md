@@ -23,7 +23,7 @@ DNF wrapper repo tool
 Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-s|--save]
                 [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
                   (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                  (-x|--expire REPOPAT)]
+                  (-x|--expire REPOPAT) | (-E|--delete-repo REPOPAT)]
                 [(-t|--enable-testing) | (-T|--disable-testing)]
                 [(-m|--enable-modular) | (-M|--disable-modular)] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
@@ -39,6 +39,7 @@ Available options:
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
   -x,--expire REPOPAT      Expire repo cache
+  -E,--delete-repo REPOPAT Remove unwanted .repo file
   -t,--enable-testing      Enable testing repos
   -T,--disable-testing     Disable testing repos
   -m,--enable-modular      Enable modular repos
