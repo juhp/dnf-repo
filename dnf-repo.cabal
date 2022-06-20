@@ -1,5 +1,5 @@
 name:                dnf-repo
-version:             0.0.1
+version:             0.1
 synopsis:            One line summary
 description:
         Short paragraph here
@@ -12,13 +12,14 @@ category:            Utility
 homepage:            https://github.com/juhp/dnf-repo
 bug-reports:         https://github.com/juhp/dnf-repo/issues
 build-type:          Simple
---                       ChangeLog.md
 extra-doc-files:     README.md
+                     ChangeLog.md
 cabal-version:       2.0
--- tested-with:         GHC == 8.6.5
---                        | == 8.8.4
---                        | == 8.10.7
---                        | == 9.0.2
+tested-with:         GHC == 8.6.5
+                     ||  == 8.8.4
+                     ||  == 8.10.7
+                     ||  == 9.0.2
+                     ||  == 9.2.3
 data-dir:            data
 data-files:          _copr:copr.fedorainfracloud.org:OWNER:REPO.repo
                      koji-REPO.repo
@@ -33,6 +34,7 @@ executable dnf-repo
                        ExpireRepos
                        Sudo
                        YumRepoFile
+  autogen-modules:     Paths_dnf_repo
   hs-source-dirs:      src
   build-depends:       base < 5,
                        directory,

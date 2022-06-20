@@ -59,7 +59,7 @@ kojiRepoTemplate = "koji-REPO.repo"
 
 -- FIXME both enabling and disabled at the same time
 -- FIXME --enable-all-coprs (for updating etc)
--- FIXME confirm repos
+-- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
 runMain :: Bool -> Bool -> Bool -> Mode -> Maybe Testing -> Maybe Modular
         -> [String] -> IO ()
