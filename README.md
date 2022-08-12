@@ -16,7 +16,7 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.2
+0.2.1
 $ dnf-repo --help
 DNF wrapper repo tool
 
@@ -25,7 +25,9 @@ Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [--exact] [-s|--save]
                   (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
                   (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT)]
                 [(-t|--enable-testing) | (-T|--disable-testing)]
-                [(-m|--enable-modular) | (-M|--disable-modular)] [DNFARGS]
+                [(-m|--enable-modular) | (-M|--disable-modular)]
+                [--enable-debuginfo | --disable-debuginfo]
+                [--enable-source | --disable-source] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:
@@ -46,6 +48,10 @@ Available options:
   -T,--disable-testing     Disable testing repos
   -m,--enable-modular      Enable modular repos
   -M,--disable-modular     Disable modular repos
+  --enable-debuginfo       Enable debuginfo repos
+  --disable-debuginfo      Disable debuginfo repos
+  --enable-source          Enable source repos
+  --disable-source         Disable source repos
 ```
 
 ## Usage examples

@@ -1,5 +1,8 @@
 # dnf-repo releases
 
+## 0.2.1 (2022-08-12)
+- handle debuginfo and source repos
+
 ## 0.2 (2022-08-12)
 - support multiple repos per repo file (eg needed for eln)
 - support multiple repo actions (eg "-d rawhide -e fedora")

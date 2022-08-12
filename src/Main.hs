@@ -35,6 +35,8 @@ main = do
     <*> many modeOpt
     <*> optional testingOpt
     <*> optional modularOpt
+    <*> optional debuginfoOpt
+    <*> optional sourceOpt
     <*> many (strArg "DNFARGS")
   where
     modeOpt =
@@ -53,6 +55,14 @@ main = do
       flagWith' EnableModular 'm' "enable-modular" "Enable modular repos" <|>
       flagWith' DisableModular 'M' "disable-modular" "Disable modular repos"
 
+    debuginfoOpt =
+      flagLongWith' EnableDebuginfo "enable-debuginfo" "Enable debuginfo repos" <|>
+      flagLongWith' DisableDebuginfo "disable-debuginfo" "Disable debuginfo repos"
+
+    sourceOpt =
+      flagLongWith' EnableSource "enable-source" "Enable source repos" <|>
+      flagLongWith' DisableSource "disable-source" "Disable source repos"
+
 coprRepoTemplate :: FilePath
 coprRepoTemplate = "copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo"
 
@@ -64,9 +74,9 @@ kojiRepoTemplate = "koji-REPO.repo"
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
 runMain :: Bool -> Bool -> Bool -> Bool -> [Mode]
-        -> Maybe Testing -> Maybe Modular
+        -> Maybe Testing -> Maybe Modular -> Maybe Debuginfo -> Maybe Source
         -> [String] -> IO ()
-runMain dryrun debug exact save modes mtesting mmodular args = do
+runMain dryrun debug exact save modes mtesting mmodular mdebuginfo msource args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
@@ -77,7 +87,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
     repofiles <- filesWithExtension "." "repo"
 --    when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
-    let repoActs = concatMap (selectRepo exact modes mtesting mmodular) nameStates
+    let repoActs = concatMap (selectRepo exact modes mtesting mmodular mdebuginfo msource) nameStates
     unless (null repoActs) $ do
       mapM_ print repoActs
       putStrLn ""

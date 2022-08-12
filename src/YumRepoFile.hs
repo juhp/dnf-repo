@@ -7,6 +7,8 @@ module YumRepoFile (
   selectRepo,
   Modular(..),
   Testing(..),
+  Debuginfo(..),
+  Source(..),
   changeRepo,
   saveRepo,
   updateState,
@@ -61,9 +63,16 @@ data Modular = EnableModular | DisableModular
 data Testing = EnableTesting | DisableTesting
   deriving Eq
 
+data Debuginfo = EnableDebuginfo | DisableDebuginfo
+  deriving Eq
+
+data Source = EnableSource | DisableSource
+  deriving Eq
+
 selectRepo :: Bool -> [Mode] -> Maybe Testing -> Maybe Modular
+           -> Maybe Debuginfo -> Maybe Source
            -> RepoState -> [ChangeEnable]
-selectRepo exact modes mtesting mmodular (name,enabled,file) =
+selectRepo exact modes mtesting mmodular mdebuginfo msource (name,enabled,file) =
   case modes of
     [] -> selectOther
     (mode:modes') ->
@@ -86,7 +95,7 @@ selectRepo exact modes mtesting mmodular (name,enabled,file) =
                            then error' $ "disable repo before deleting: " ++ name
                            else [Delete file]
                       else []
-      ++ selectRepo exact modes' mtesting mmodular (name,enabled,file)
+      ++ selectRepo exact modes' mtesting mmodular mdebuginfo msource (name,enabled,file)
   where
     matchesRepo = if exact then (==) else isInfixOf
 
@@ -98,20 +107,44 @@ selectRepo exact modes mtesting mmodular (name,enabled,file) =
           Just include ->
             case include of
               EnableModular | not enabled ->
-                               if "testing" `isInfixOf` name
-                               then
-                                 [Enable name | mtesting == Just EnableTesting]
-                               else [Enable name]
+                              if "testing" `isInfixOf` name
+                              then
+                                [Enable name | mtesting == Just EnableTesting]
+                              else [Enable name]
               DisableModular | enabled -> [Disable name]
               _ -> []
+      | "debuginfo" `isSuffixOf` name =
+        case mdebuginfo of
+          Nothing -> []
+          Just include ->
+            case include of
+              EnableDebuginfo | not enabled ->
+                                if "testing" `isInfixOf` name
+                                then
+                                  [Enable name | mtesting == Just EnableTesting]
+                                else [Enable name]
+              DisableDebuginfo | enabled -> [Disable name]
+              _ -> []
+      | "source" `isSuffixOf` name =
+        case msource of
+          Nothing -> []
+          Just include ->
+            case include of
+              EnableSource | not enabled ->
+                             if "testing" `isInfixOf` name
+                             then
+                               [Enable name | mtesting == Just EnableTesting]
+                             else [Enable name]
+              DisableSource | enabled -> [Disable name]
+              _ -> []
       | "testing" `isInfixOf` name =
-          case mtesting of
-            Nothing -> []
-            Just include ->
-              case include of
-                EnableTesting | not enabled -> [Enable name]
-                DisableTesting | enabled -> [Disable name]
-                _ -> []
+        case mtesting of
+          Nothing -> []
+          Just include ->
+            case include of
+              EnableTesting | not enabled -> [Enable name]
+              DisableTesting | enabled -> [Disable name]
+              _ -> []
       | otherwise = []
 
 readRepos :: FilePath -> IO [RepoState]
