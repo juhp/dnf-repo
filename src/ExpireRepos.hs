@@ -8,12 +8,12 @@ import Sudo
 expiredFile :: FilePath
 expiredFile = "/var/cache/dnf/expired_repos.json"
 
-expireRepos :: Bool -> [String] -> IO ()
-expireRepos _ [] = error' "no repos to expire given"
-expireRepos dryrun repos = do
+expireRepos :: Bool -> Bool -> [String] -> IO ()
+expireRepos _ _ [] = error' "no repos to expire given"
+expireRepos dryrun debug repos = do
   old <- read <$> readFile expiredFile :: IO [String]
   let expired = nub $ old ++ repos
-  doSudo dryrun "sed" ["-i", "-e",
+  doSudo dryrun debug "sed" ["-i", "-e",
                        "s/" ++ renderShow old ++ "/" ++ renderShow expired ++ "/",
                        expiredFile]
   putStrLn $ "expired now: " ++ show expired

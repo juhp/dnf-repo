@@ -61,9 +61,9 @@ data Modular = EnableModular | DisableModular
 data Testing = EnableTesting | DisableTesting
   deriving Eq
 
-selectRepo :: Bool -> Bool -> [Mode] -> Maybe Testing -> Maybe Modular
+selectRepo :: Bool -> [Mode] -> Maybe Testing -> Maybe Modular
            -> RepoState -> [ChangeEnable]
-selectRepo debug exact modes mtesting mmodular (name,enabled,file) =
+selectRepo exact modes mtesting mmodular (name,enabled,file) =
   case modes of
     [] -> selectOther
     (mode:modes') ->
@@ -88,7 +88,7 @@ selectRepo debug exact modes mtesting mmodular (name,enabled,file) =
                            then error' $ "disable repo before deleting: " ++ name
                            else [Delete file]
                       else []
-      ++ selectRepo debug exact modes' mtesting mmodular (name,enabled,file)
+      ++ selectRepo exact modes' mtesting mmodular (name,enabled,file)
   where
     matchesRepo = if exact then (==) else isInfixOf
 

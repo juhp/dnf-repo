@@ -77,7 +77,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
     repofiles <- filesWithExtension "." "repo"
 --    when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
-    let repoActs = concatMap (selectRepo debug exact modes mtesting mmodular) nameStates
+    let repoActs = concatMap (selectRepo exact modes mtesting mmodular) nameStates
     unless (null repoActs) $ do
       mapM_ print repoActs
       putStrLn ""
@@ -85,7 +85,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
       case mode of
         ExpireRepo _ -> do
           putStrLn ""
-          expireRepos dryrun $ mapMaybe expiring repoActs
+          expireRepos dryrun debug $ mapMaybe expiring repoActs
         DeleteRepo _ ->
           mapM_ deleteRepos $ mapMaybe deleting repoActs
         _ -> return ()
@@ -94,7 +94,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
         then putStrLn "no changes to save\n"
         else do
         prompt_ "Press Enter to save repo enabled state"
-        doSudo dryrun "dnf" $
+        doSudo dryrun debug "dnf" $
           "config-manager" :
           concatMap saveRepo repoActs
     if null args
@@ -104,7 +104,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
       sleep 1
       putStrLn ""
       let repoargs = concatMap changeRepo repoActs
-        in doSudo dryrun "dnf" $ repoargs ++ args
+        in doSudo dryrun debug "dnf" $ repoargs ++ args
     where
       -- FIXME pull non-fedora copr repo file
       -- FIXME delete created copr repo file if repo doesn't exist
@@ -126,7 +126,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
             withTempDir $ \ tmpdir -> do
               let tmpfile = tmpdir </> repofile
               unless dryrun $ writeFile tmpfile repodef
-              doSudo dryrun "cp" [tmpfile, repofile]
+              doSudo dryrun debug "cp" [tmpfile, repofile]
 
       addKojiRepo :: String -> IO ()
       addKojiRepo repo = do
@@ -140,7 +140,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
         withTempDir $ \ tmpdir -> do
           let tmpfile = tmpdir </> repofile
           unless dryrun $ writeFile tmpfile repodef
-          doSudo dryrun "cp" [tmpfile, repofile]
+          doSudo dryrun debug "cp" [tmpfile, repofile]
 
       listRepos :: [RepoState] -> IO ()
       listRepos repoStates = do
@@ -160,7 +160,7 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
           Just owner -> error' $ repofile +-+ "owned by" +-+ owner
           Nothing -> do
             ok <- yesno $ "Remove " ++ takeFileName repofile
-            when ok $ doSudo dryrun "rm" [repofile]
+            when ok $ doSudo dryrun debug "rm" [repofile]
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
