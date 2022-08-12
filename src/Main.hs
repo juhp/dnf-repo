@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, LambdaCase #-}
 
 -- SPDX-License-Identifier: BSD-3-Clause
 
@@ -69,8 +69,8 @@ runMain :: Bool -> Bool -> Bool -> Bool -> [Mode]
 runMain dryrun debug exact save modes mtesting mmodular args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
-    forM_ modes $ \mode ->
-      case mode of
+    forM_ modes $
+      \case
         AddCopr copr -> addCoprRepo copr
         AddKoji repo -> addKojiRepo repo
         _ -> return ()
@@ -81,8 +81,8 @@ runMain dryrun debug exact save modes mtesting mmodular args = do
     unless (null repoActs) $ do
       mapM_ print repoActs
       putStrLn ""
-    forM_ modes $ \mode ->
-      case mode of
+    forM_ modes $
+      \case
         ExpireRepo _ -> do
           putStrLn ""
           expireRepos dryrun debug $ mapMaybe expiring repoActs
