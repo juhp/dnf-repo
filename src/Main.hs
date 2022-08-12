@@ -8,7 +8,6 @@ import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
-import Data.Tuple.Extra (fst3,snd3)
 import SimpleCmd
 import SimpleCmdArgs
 import System.Directory
@@ -33,10 +32,6 @@ main = do
     <*> switchLongWith "exact" "Match repo names exactly"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
     <*> many modeOpt
-    <*> optional testingOpt
-    <*> optional modularOpt
-    <*> optional debuginfoOpt
-    <*> optional sourceOpt
     <*> many (strArg "DNFARGS")
   where
     modeOpt =
@@ -45,23 +40,15 @@ main = do
       DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> strOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
-      DeleteRepo <$> strOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file"
-
-    testingOpt =
-      flagWith' EnableTesting 't' "enable-testing" "Enable testing repos" <|>
-      flagWith' DisableTesting 'T' "disable-testing" "Disable testing repos"
-
-    modularOpt =
-      flagWith' EnableModular 'm' "enable-modular" "Enable modular repos" <|>
-      flagWith' DisableModular 'M' "disable-modular" "Disable modular repos"
-
-    debuginfoOpt =
-      flagLongWith' EnableDebuginfo "enable-debuginfo" "Enable debuginfo repos" <|>
-      flagLongWith' DisableDebuginfo "disable-debuginfo" "Disable debuginfo repos"
-
-    sourceOpt =
-      flagLongWith' EnableSource "enable-source" "Enable source repos" <|>
-      flagLongWith' DisableSource "disable-source" "Disable source repos"
+      DeleteRepo <$> strOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
+      flagWith' (Specific EnableTesting) 't' "enable-testing" "Enable testing repos" <|>
+      flagWith' (Specific DisableTesting) 'T' "disable-testing" "Disable testing repos" <|>
+      flagWith' (Specific EnableModular) 'm' "enable-modular" "Enable modular repos" <|>
+      flagWith' (Specific DisableModular) 'M' "disable-modular" "Disable modular repos" <|>
+      flagLongWith' (Specific EnableDebuginfo) "enable-debuginfo" "Enable debuginfo repos" <|>
+      flagLongWith' (Specific DisableDebuginfo) "disable-debuginfo" "Disable debuginfo repos" <|>
+      flagLongWith' (Specific EnableSource) "enable-source" "Enable source repos" <|>
+      flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos"
 
 coprRepoTemplate :: FilePath
 coprRepoTemplate = "copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo"
@@ -73,10 +60,8 @@ kojiRepoTemplate = "koji-REPO.repo"
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
-runMain :: Bool -> Bool -> Bool -> Bool -> [Mode]
-        -> Maybe Testing -> Maybe Modular -> Maybe Debuginfo -> Maybe Source
-        -> [String] -> IO ()
-runMain dryrun debug exact save modes mtesting mmodular mdebuginfo msource args = do
+runMain :: Bool -> Bool -> Bool -> Bool -> [Mode] -> [String] -> IO ()
+runMain dryrun debug exact save modes args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
@@ -87,7 +72,7 @@ runMain dryrun debug exact save modes mtesting mmodular mdebuginfo msource args 
     repofiles <- filesWithExtension "." "repo"
 --    when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
-    let repoActs = concatMap (selectRepo exact modes mtesting mmodular mdebuginfo msource) nameStates
+    let repoActs = selectRepo exact nameStates modes
     unless (null repoActs) $ do
       mapM_ print repoActs
       putStrLn ""
@@ -156,7 +141,7 @@ runMain dryrun debug exact save modes mtesting mmodular mdebuginfo msource args 
       listRepos repoStates = do
         let (on,off) =
               -- can't this be simplified?
-              bimap (map fst3) (map fst3) $ partition snd3 repoStates
+              bimap (map fst) (map fst) $ partition (fst . snd) repoStates
         putStrLn "Enabled:"
         mapM_ putStrLn on
         putStrLn ""

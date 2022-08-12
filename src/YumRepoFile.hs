@@ -2,13 +2,10 @@
 
 module YumRepoFile (
   Mode(..),
+  SpecificChange(..),
   readRepos,
   RepoState,
   selectRepo,
-  Modular(..),
-  Testing(..),
-  Debuginfo(..),
-  Source(..),
   changeRepo,
   saveRepo,
   updateState,
@@ -17,15 +14,33 @@ module YumRepoFile (
   )
 where
 
-import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, trim)
+import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, sort, stripInfix,
+                        trim)
 import SimpleCmd (error')
 
-type RepoState = (String,Bool,FilePath)
+type RepoState = (String,(Bool,FilePath))
 
 data Mode = AddCopr String | AddKoji String
           | EnableRepo String | DisableRepo String
           | ExpireRepo String | DeleteRepo String
-  deriving Eq
+          | Specific SpecificChange
+  deriving (Eq, Ord)
+
+data SpecificChange = EnableModular | DisableModular
+                    | EnableTesting | DisableTesting
+                    | EnableDebuginfo | DisableDebuginfo
+                    | EnableSource | DisableSource
+  deriving (Eq, Ord)
+
+repoSubstr :: SpecificChange -> String
+repoSubstr EnableModular = "-modular"
+repoSubstr DisableModular = "-modular"
+repoSubstr EnableTesting = "-testing"
+repoSubstr DisableTesting = "-testing"
+repoSubstr EnableDebuginfo = "-debuginfo"
+repoSubstr DisableDebuginfo = "-debuginfo"
+repoSubstr EnableSource = "-source"
+repoSubstr DisableSource = "-source"
 
 data ChangeEnable = Disable String | Enable String | Expire String
                   | Delete FilePath
@@ -51,107 +66,60 @@ deleting _ = Nothing
 
 updateState :: [ChangeEnable] -> RepoState -> RepoState
 updateState [] rs = rs
-updateState (ce:ces) re@(repo,enabled,file) =
+updateState (ce:ces) re@(repo,(enabled,file)) =
   case ce of
-    Disable r | r == repo && enabled -> (repo,False,file)
-    Enable r | r == repo && not enabled -> (repo,True,file)
+    Disable r | r == repo && enabled -> (repo,(False,file))
+    Enable r | r == repo && not enabled -> (repo,(True,file))
     _ -> updateState ces re
 
-data Modular = EnableModular | DisableModular
-  deriving Eq
-
-data Testing = EnableTesting | DisableTesting
-  deriving Eq
-
-data Debuginfo = EnableDebuginfo | DisableDebuginfo
-  deriving Eq
-
-data Source = EnableSource | DisableSource
-  deriving Eq
-
-selectRepo :: Bool -> [Mode] -> Maybe Testing -> Maybe Modular
-           -> Maybe Debuginfo -> Maybe Source
-           -> RepoState -> [ChangeEnable]
-selectRepo exact modes mtesting mmodular mdebuginfo msource (name,enabled,file) =
-  case modes of
-    [] -> selectOther
-    (mode:modes') ->
-      case mode of
-        AddCopr repo -> if repo `isSuffixOf` name && not enabled
-                        then [Enable name]
-                        else selectOther
-        AddKoji repo -> if repo `isSuffixOf` name && not enabled
-                        then [Enable name]
-                        else selectOther
-        EnableRepo pat -> if pat `matchesRepo` name && not enabled
-                      then [Enable name]
-                      else selectOther
-        DisableRepo pat -> if pat `matchesRepo` name && enabled
-                       then [Disable name]
-                       else selectOther
-        ExpireRepo pat -> [Expire name | pat `matchesRepo` name]
-        DeleteRepo pat -> if pat `matchesRepo` name
-                      then if enabled
-                           then error' $ "disable repo before deleting: " ++ name
-                           else [Delete file]
-                      else []
-      ++ selectRepo exact modes' mtesting mmodular mdebuginfo msource (name,enabled,file)
+selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
+selectRepo exact repostates modes =
+  foldr selectRepo' [] (sort modes)
   where
-    matchesRepo = if exact then (==) else isInfixOf
+    selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
+    selectRepo' mode acc =
+      acc ++ concatMap (selectRepoMode mode acc) repostates
 
-    selectOther :: [ChangeEnable]
-    selectOther
-      | "modular" `isSuffixOf` name =
-        case mmodular of
-          Nothing -> []
-          Just include ->
-            case include of
-              EnableModular | not enabled ->
-                              if "testing" `isInfixOf` name
-                              then
-                                [Enable name | mtesting == Just EnableTesting]
-                              else [Enable name]
-              DisableModular | enabled -> [Disable name]
-              _ -> []
-      | "debuginfo" `isSuffixOf` name =
-        case mdebuginfo of
-          Nothing -> []
-          Just include ->
-            case include of
-              EnableDebuginfo | not enabled ->
-                                if "testing" `isInfixOf` name
-                                then
-                                  [Enable name | mtesting == Just EnableTesting]
-                                else [Enable name]
-              DisableDebuginfo | enabled -> [Disable name]
-              _ -> []
-      | "source" `isSuffixOf` name =
-        case msource of
-          Nothing -> []
-          Just include ->
-            case include of
-              EnableSource | not enabled ->
-                             if "testing" `isInfixOf` name
-                             then
-                               [Enable name | mtesting == Just EnableTesting]
-                             else [Enable name]
-              DisableSource | enabled -> [Disable name]
-              _ -> []
-      | "testing" `isInfixOf` name =
-        case mtesting of
-          Nothing -> []
-          Just include ->
-            case include of
-              EnableTesting | not enabled -> [Enable name]
-              DisableTesting | enabled -> [Disable name]
-              _ -> []
-      | otherwise = []
+    selectRepoMode :: Mode -> [ChangeEnable] -> RepoState -> [ChangeEnable]
+    selectRepoMode mode acc (name,(enabled,file)) =
+      case mode of
+        AddCopr repo ->
+          [Enable name | repo `isSuffixOf` name, not enabled]
+        AddKoji repo ->
+          [Enable name | repo `isSuffixOf` name, not enabled]
+        EnableRepo pat ->
+          [Enable name | pat `matchesRepo` name, not enabled]
+        DisableRepo pat ->
+          [Disable name | pat `matchesRepo` name, enabled]
+        ExpireRepo pat -> [Expire name | pat `matchesRepo` name]
+        DeleteRepo pat ->
+          if pat `matchesRepo` name
+          then if enabled
+               then error' $ "disable repo before deleting: " ++ name
+               else [Delete file]
+          else []
+        Specific change ->
+          let substr =  repoSubstr change in
+            if change `elem`
+               [EnableModular,EnableTesting,EnableDebuginfo,EnableSource]
+            then [Enable name | substr `isInfixOf` name, not enabled,
+                  repoStatus acc (removeInfix substr name) True]
+            else [Disable name | substr `isInfixOf` name, enabled]
+
+    repoStatus :: [ChangeEnable] -> String -> Bool -> Bool
+    repoStatus acc repo state =
+      case lookup repo repostates of
+        Just (enabled,_) ->
+          enabled == state || Enable repo `elem` acc
+        Nothing -> False
+
+    matchesRepo = if exact then (==) else isInfixOf
 
 readRepos :: FilePath -> IO [RepoState]
 readRepos file =
   parseRepos file . lines <$> readFile file
 
--- was called parseIni
+-- parse ini
 parseRepos :: FilePath -> [String] -> [RepoState]
 parseRepos file ls =
   case nextSection ls of
@@ -165,7 +133,7 @@ parseRepos file ls =
                   "enabled=1" -> (True,more')
                   "enabled=0" -> (False,more')
                   _ -> error' $ "unknown enabled state " ++ e ++ " for " ++ section
-      in (section,enabled,file) : parseRepos file more
+      in (section,(enabled,file)) : parseRepos file more
   where
     nextSection :: [String] -> Maybe (String,[String])
     nextSection [] = Nothing
@@ -176,3 +144,8 @@ parseRepos file ls =
           then Just (init rest, ls')
           else error' $ "bad section " ++ l ++ " in " ++ file
         _ -> nextSection ls'
+
+-- adapted from simple-cmd
+removeInfix :: String -> String-> String
+removeInfix inf orig =
+  maybe orig (uncurry (++)) $ stripInfix inf orig
