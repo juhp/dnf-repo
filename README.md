@@ -16,18 +16,18 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.2.1
+0.3
 $ dnf-repo --help
 DNF wrapper repo tool
 
 Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [--exact] [-s|--save]
                 [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
                   (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                  (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT)]
-                [(-t|--enable-testing) | (-T|--disable-testing)]
-                [(-m|--enable-modular) | (-M|--disable-modular)]
-                [--enable-debuginfo | --disable-debuginfo]
-                [--enable-source | --disable-source] [DNFARGS]
+                  (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT) |
+                  (-t|--enable-testing) | (-T|--disable-testing) |
+                  (-m|--enable-modular) | (-M|--disable-modular) |
+                  --enable-debuginfo | --disable-debuginfo | --enable-source |
+                  --disable-source] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:

@@ -2,4 +2,5 @@
 - cache copr history etc
 - support arbitray copr
 - delete non-existent repos
-- disable cisco repo
+- disable commonly unused repos
+  - disable cisco repo

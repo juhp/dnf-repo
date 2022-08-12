@@ -1,6 +1,7 @@
 # dnf-repo releases
 
-## 0.2.1 (2022-08-12)
+## 0.3 (2022-08-12)
+- fold over multiple changes (eg -m -t now combine correctly)
 - handle debuginfo and source repos
 
 ## 0.2 (2022-08-12)
