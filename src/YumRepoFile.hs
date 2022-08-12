@@ -80,9 +80,7 @@ selectRepo exact modes mtesting mmodular (name,enabled,file) =
         DisableRepo pat -> if pat `matchesRepo` name && enabled
                        then [Disable name]
                        else selectOther
-        ExpireRepo pat -> if pat `matchesRepo` name
-                      then [Expire name]
-                      else []
+        ExpireRepo pat -> [Expire name | pat `matchesRepo` name]
         DeleteRepo pat -> if pat `matchesRepo` name
                       then if enabled
                            then error' $ "disable repo before deleting: " ++ name
@@ -101,9 +99,8 @@ selectRepo exact modes mtesting mmodular (name,enabled,file) =
             case include of
               EnableModular | not enabled ->
                                if "testing" `isInfixOf` name
-                               then if mtesting == Just EnableTesting
-                                    then [Enable name]
-                                    else []
+                               then
+                                 [Enable name | mtesting == Just EnableTesting]
                                else [Enable name]
               DisableModular | enabled -> [Disable name]
               _ -> []
