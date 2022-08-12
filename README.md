@@ -75,6 +75,11 @@ $ dnf-repo --disable-modular --save
 Note that sudo is used implicitly when needed:
 there is no need to run dnf-repo with sudo.
 
+Switch a system from Rawhide to F37:
+```shellsession
+$ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora\*
+```
+
 ## Installation
 
 A copr repo is available:

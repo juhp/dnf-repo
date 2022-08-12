@@ -30,8 +30,9 @@ main = do
     runMain
     <$> switchWith 'n' "dryrun" "Dry run"
     <*> switchWith 'D' "debug" "Debug output"
+    <*> switchLongWith "exact" "Match repo names exactly"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
-    <*> modeOpt
+    <*> many modeOpt
     <*> optional testingOpt
     <*> optional modularOpt
     <*> many (strArg "DNFARGS")
@@ -42,8 +43,7 @@ main = do
       DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> strOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
-      DeleteRepo <$> strOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
-      pure Default
+      DeleteRepo <$> strOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file"
 
     testingOpt =
       flagWith' EnableTesting 't' "enable-testing" "Enable testing repos" <|>
@@ -63,29 +63,32 @@ kojiRepoTemplate = "koji-REPO.repo"
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
-runMain :: Bool -> Bool -> Bool -> Mode -> Maybe Testing -> Maybe Modular
+runMain :: Bool -> Bool -> Bool -> Bool -> [Mode]
+        -> Maybe Testing -> Maybe Modular
         -> [String] -> IO ()
-runMain dryrun debug save mode mtesting mmodular args = do
+runMain dryrun debug exact save modes mtesting mmodular args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
-    case mode of
-      AddCopr copr -> addCoprRepo copr
-      AddKoji repo -> addKojiRepo repo
-      _ -> return ()
+    forM_ modes $ \mode ->
+      case mode of
+        AddCopr copr -> addCoprRepo copr
+        AddKoji repo -> addKojiRepo repo
+        _ -> return ()
     repofiles <- filesWithExtension "." "repo"
 --    when debug $ print repofiles
-    nameStates <- sort <$> mapM readRepo repofiles
-    let repoActs = mapMaybe (selectRepo debug mode mtesting mmodular) nameStates
+    nameStates <- sort <$> concatMapM readRepos repofiles
+    let repoActs = concatMap (selectRepo debug exact modes mtesting mmodular) nameStates
     unless (null repoActs) $ do
       mapM_ print repoActs
       putStrLn ""
-    case mode of
-      ExpireRepo _ -> do
-        putStrLn ""
-        expireRepos dryrun $ mapMaybe expiring repoActs
-      DeleteRepo _ ->
-        mapM_ deleteRepos $ mapMaybe deleting repoActs
-      _ -> return ()
+    forM_ modes $ \mode ->
+      case mode of
+        ExpireRepo _ -> do
+          putStrLn ""
+          expireRepos dryrun $ mapMaybe expiring repoActs
+        DeleteRepo _ ->
+          mapM_ deleteRepos $ mapMaybe deleting repoActs
+        _ -> return ()
     when save $
       if null repoActs
         then putStrLn "no changes to save\n"

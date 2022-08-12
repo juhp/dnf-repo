@@ -2,7 +2,7 @@
 
 module YumRepoFile (
   Mode(..),
-  readRepo,
+  readRepos,
   RepoState,
   selectRepo,
   Modular(..),
@@ -22,7 +22,7 @@ type RepoState = (String,Bool,FilePath)
 
 data Mode = AddCopr String | AddKoji String
           | EnableRepo String | DisableRepo String
-          | ExpireRepo String | DeleteRepo String | Default
+          | ExpireRepo String | DeleteRepo String
   deriving Eq
 
 data ChangeEnable = Disable String | Enable String | Expire String
@@ -61,87 +61,88 @@ data Modular = EnableModular | DisableModular
 data Testing = EnableTesting | DisableTesting
   deriving Eq
 
-selectRepo :: Bool -> Mode -> Maybe Testing -> Maybe Modular
-           -> RepoState -> Maybe ChangeEnable
-selectRepo _debug mode mtesting mmodular (name,enabled,file) =
-  case mode of
-    AddCopr repo -> if repo `isSuffixOf` name && not enabled
-                    then Just (Enable name)
-                    else selectOther
-    AddKoji repo -> if repo `isSuffixOf` name && not enabled
-                    then Just (Enable name)
-                    else selectOther
-    EnableRepo pat -> if pat `isInfixOf` name && not enabled
-                  then Just (Enable name)
-                  else selectOther
-    DisableRepo pat -> if pat `isInfixOf` name && enabled
-                   then Just (Disable name)
-                   else selectOther
-    ExpireRepo pat -> if pat `isInfixOf` name
-                  then Just (Expire name)
-                  else Nothing
-    DeleteRepo pat -> if pat `isInfixOf` name
-                  then if enabled
-                       then error' $ "disable repo before deleting: " ++ name
-                       else Just (Delete file)
-                  else Nothing
-    _ -> selectOther
+selectRepo :: Bool -> Bool -> [Mode] -> Maybe Testing -> Maybe Modular
+           -> RepoState -> [ChangeEnable]
+selectRepo debug exact modes mtesting mmodular (name,enabled,file) =
+  case modes of
+    [] -> selectOther
+    (mode:modes') ->
+      case mode of
+        AddCopr repo -> if repo `isSuffixOf` name && not enabled
+                        then [Enable name]
+                        else selectOther
+        AddKoji repo -> if repo `isSuffixOf` name && not enabled
+                        then [Enable name]
+                        else selectOther
+        EnableRepo pat -> if pat `matchesRepo` name && not enabled
+                      then [Enable name]
+                      else selectOther
+        DisableRepo pat -> if pat `matchesRepo` name && enabled
+                       then [Disable name]
+                       else selectOther
+        ExpireRepo pat -> if pat `matchesRepo` name
+                      then [Expire name]
+                      else []
+        DeleteRepo pat -> if pat `matchesRepo` name
+                      then if enabled
+                           then error' $ "disable repo before deleting: " ++ name
+                           else [Delete file]
+                      else []
+      ++ selectRepo debug exact modes' mtesting mmodular (name,enabled,file)
   where
-    selectOther :: Maybe ChangeEnable
+    matchesRepo = if exact then (==) else isInfixOf
+
+    selectOther :: [ChangeEnable]
     selectOther
       | "modular" `isSuffixOf` name =
         case mmodular of
-          Nothing -> Nothing
+          Nothing -> []
           Just include ->
             case include of
               EnableModular | not enabled ->
                                if "testing" `isInfixOf` name
                                then if mtesting == Just EnableTesting
-                                    then Just (Enable name)
-                                    else Nothing
-                               else Just (Enable name)
-              DisableModular | enabled -> Just (Disable name)
-              _ -> Nothing
+                                    then [Enable name]
+                                    else []
+                               else [Enable name]
+              DisableModular | enabled -> [Disable name]
+              _ -> []
       | "testing" `isInfixOf` name =
           case mtesting of
-            Nothing -> Nothing
+            Nothing -> []
             Just include ->
               case include of
-                EnableTesting | not enabled -> Just (Enable name)
-                DisableTesting | enabled -> Just (Disable name)
-                _ -> Nothing
-      | otherwise = Nothing
+                EnableTesting | not enabled -> [Enable name]
+                DisableTesting | enabled -> [Disable name]
+                _ -> []
+      | otherwise = []
 
-readRepo :: FilePath -> IO RepoState
-readRepo file =
-  parseRepo file . lines <$> readFile file
+readRepos :: FilePath -> IO [RepoState]
+readRepos file =
+  parseRepos file . lines <$> readFile file
 
 -- was called parseIni
-parseRepo :: FilePath -> [String] -> RepoState
-parseRepo file [] = error' $ "empty ini file: " ++ file
-parseRepo file (l:ls) =
-  case trim l of
-    "" -> parseRepo file ls
-    ('#':_) -> parseRepo file ls
-    sec ->
-      let section = secName sec
-          enabled =
-            case dropWhile (not . ("enabled=" `isPrefixOf`)) ls of
+parseRepos :: FilePath -> [String] -> [RepoState]
+parseRepos file ls =
+  case nextSection ls of
+    Nothing -> []
+    Just (section,rest) ->
+      let (enabled,more) =
+            case dropWhile (not . ("enabled=" `isPrefixOf`)) rest of
               [] -> error' $ "no enabled field for " ++ section
-              (e:_) ->
+              (e:more') ->
                 case trim e of
-                  "enabled=1" -> True
-                  "enabled=0" -> False
+                  "enabled=1" -> (True,more')
+                  "enabled=0" -> (False,more')
                   _ -> error' $ "unknown enabled state " ++ e ++ " for " ++ section
-      in (section,enabled,file)
+      in (section,enabled,file) : parseRepos file more
   where
-    secName :: String -> String
-    secName sec =
-      if ' ' `elem` sec
-      then error' $ "section contains space: " ++ sec
-      else case sec of
+    nextSection :: [String] -> Maybe (String,[String])
+    nextSection [] = Nothing
+    nextSection (l:ls') =
+      case l of
         ('[' : rest) ->
           if last rest == ']'
-          then init rest
-          else error' $ "bad section " ++ sec ++ " in " ++ file
-        _ -> error' $ "section not found in " ++ file
+          then Just (init rest, ls')
+          else error' $ "bad section " ++ l ++ " in " ++ file
+        _ -> nextSection ls'
