@@ -16,14 +16,14 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.1
+0.2
 $ dnf-repo --help
 DNF wrapper repo tool
 
-Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-s|--save]
+Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [--exact] [-s|--save]
                 [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
                   (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                  (-x|--expire REPOPAT) | (-E|--delete-repo REPOPAT)]
+                  (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT)]
                 [(-t|--enable-testing) | (-T|--disable-testing)]
                 [(-m|--enable-modular) | (-M|--disable-modular)] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
@@ -33,20 +33,22 @@ Available options:
   --version                Show version
   -n,--dryrun              Dry run
   -D,--debug               Debug output
+  --exact                  Match repo names exactly
   -s,--save                Save the repo enable/disable state
   -c,--add-copr COPR       Create repo file for copr repo
   -k,--add-koji REPO       Create repo file for koji repo
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
   -x,--expire REPOPAT      Expire repo cache
-  -E,--delete-repo REPOPAT Remove unwanted .repo file
+  -E,--delete-repofile REPOPAT
+                           Remove unwanted .repo file
   -t,--enable-testing      Enable testing repos
   -T,--disable-testing     Disable testing repos
   -m,--enable-modular      Enable modular repos
   -M,--disable-modular     Disable modular repos
 ```
 
-## Usage
+## Usage examples
 List repos:
 ```shellsession
 $ dnf-repo
@@ -71,14 +73,15 @@ Disable modular repos permanently:
 ```shellsession
 $ dnf-repo --disable-modular --save
 ```
-
-Note that sudo is used implicitly when needed:
-there is no need to run dnf-repo with sudo.
+(equivalently `dnf-repo -M -s`)
 
 Switch a system from Rawhide to F37:
 ```shellsession
 $ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora\*
 ```
+
+Note that sudo is used implicitly when needed:
+there is no need to run dnf-repo with sudo.
 
 ## Installation
 
