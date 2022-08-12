@@ -73,7 +73,7 @@ Disable modular repos permanently:
 ```shellsession
 $ dnf-repo --disable-modular --save
 ```
-(equivalently `dnf-repo -M -s`)
+(or equivalently `dnf-repo -M -s`).
 
 Switch a system from Rawhide to F37:
 ```shellsession
@@ -87,3 +87,7 @@ there is no need to run dnf-repo with sudo.
 
 A copr repo is available:
 <https://copr.fedorainfracloud.org/coprs/petersen/dnf-repo/>
+
+## Building
+
+Use {cabal,stack,cabal-rpm} install.
