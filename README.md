@@ -65,6 +65,10 @@ Update with testing repos:
 $ dnf-repo -t update
 ```
 
+Note that sudo is used implicitly when needed:
+there is no need to run dnf-repo with sudo.
+
+### Copr
 List disabled copr repos (actually shows "copr" repos that would be enabled):
 ```shellsession
 $ dnf-repo -e copr
@@ -75,19 +79,23 @@ Disable all copr repos for update:
 $ dnf-repo -d copr update
 ```
 
+Install a package directly from a new copr:
+```shellsession
+$ dnf-repo -c  varlad/helix install helix
+```
+
+### Changing system repo config
 Disable modular repos permanently:
 ```shellsession
 $ dnf-repo --disable-modular --save
 ```
 (or equivalently `dnf-repo -M -s`).
 
+### Switch system from rawhide
 Switch a system from Rawhide to F37:
 ```shellsession
 $ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora\*
 ```
-
-Note that sudo is used implicitly when needed:
-there is no need to run dnf-repo with sudo.
 
 ## Installation
 
