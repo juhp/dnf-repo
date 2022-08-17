@@ -81,7 +81,12 @@ $ dnf-repo -d copr update
 
 Install a package directly from a new copr:
 ```shellsession
-$ dnf-repo -c  varlad/helix install helix
+$ dnf-repo -c varlad/helix install helix
+```
+
+Later update with copr:
+```shellsession
+$ dnf-repo -e helix update
 ```
 
 ### Changing system repo config
