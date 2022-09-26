@@ -31,6 +31,8 @@ main = do
     <*> switchWith 'D' "debug" "Debug output"
     <*> switchLongWith "exact" "Match repo names exactly"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
+    <*> optional (flagWith' True 'w' "weak-deps" "Use weak dependencies" <|>
+                  flagWith' False 'W' "no-weak-deps" "Disable weak dependencies")
     <*> many modeOpt
     <*> many (strArg "DNFARGS")
   where
@@ -60,8 +62,9 @@ kojiRepoTemplate = "koji-REPO.repo"
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
-runMain :: Bool -> Bool -> Bool -> Bool -> [Mode] -> [String] -> IO ()
-runMain dryrun debug exact save modes args = do
+runMain :: Bool -> Bool -> Bool -> Bool -> Maybe Bool -> [Mode] -> [String]
+        -> IO ()
+runMain dryrun debug exact save mweakdeps modes args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
@@ -99,7 +102,8 @@ runMain dryrun debug exact save modes args = do
       sleep 1
       putStrLn ""
       let repoargs = concatMap changeRepo repoActs
-        in doSudo dryrun debug "dnf" $ repoargs ++ args
+          weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
+        in doSudo dryrun debug "dnf" $ repoargs ++ weakdeps ++ args
     where
       -- FIXME pull non-fedora copr repo file
       -- FIXME delete created copr repo file if repo doesn't exist
