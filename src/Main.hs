@@ -36,13 +36,16 @@ main = do
     <*> many modeOpt
     <*> many (strArg "DNFARGS")
   where
+    repoOptionWith =
+      (fmap . fmap . fmap . fmap) (replace "/" ":") . strOptionWith
+
     modeOpt =
-      AddCopr . replace "/" ":" <$> strOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
-      AddKoji <$> strOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo" <|>
-      DisableRepo <$> strOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
-      EnableRepo <$> strOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
-      ExpireRepo <$> strOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
-      DeleteRepo <$> strOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
+      AddCopr <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
+      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo" <|>
+      DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
+      EnableRepo <$> repoOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
+      ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
+      DeleteRepo <$> repoOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
       flagWith' (Specific EnableTesting) 't' "enable-testing" "Enable testing repos" <|>
       flagWith' (Specific DisableTesting) 'T' "disable-testing" "Disable testing repos" <|>
       flagWith' (Specific EnableModular) 'm' "enable-modular" "Enable modular repos" <|>
