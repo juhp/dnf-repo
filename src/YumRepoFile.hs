@@ -24,13 +24,13 @@ data Mode = AddCopr String | AddKoji String
           | EnableRepo String | DisableRepo String
           | ExpireRepo String | DeleteRepo String
           | Specific SpecificChange
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data SpecificChange = EnableModular | DisableModular
                     | EnableTesting | DisableTesting
                     | EnableDebuginfo | DisableDebuginfo
                     | EnableSource | DisableSource
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 repoSubstr :: SpecificChange -> String
 repoSubstr EnableModular = "-modular"
@@ -78,7 +78,11 @@ selectRepo exact repostates modes =
   where
     selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
     selectRepo' mode acc =
-      acc ++ concatMap (selectRepoMode mode acc) repostates
+      let result = concatMap (selectRepoMode mode acc) repostates
+      in
+        if null result
+        then error' ("no match for repo pattern action: " ++ show mode)
+        else acc ++ result
 
     selectRepoMode :: Mode -> [ChangeEnable] -> RepoState -> [ChangeEnable]
     selectRepoMode mode acc (name,(enabled,file)) =
@@ -91,7 +95,8 @@ selectRepo exact repostates modes =
           [Enable name | pat `matchesRepo` name, not enabled]
         DisableRepo pat ->
           [Disable name | pat `matchesRepo` name, enabled]
-        ExpireRepo pat -> [Expire name | pat `matchesRepo` name]
+        ExpireRepo pat ->
+          [Expire name | pat `matchesRepo` name]
         DeleteRepo pat ->
           if pat `matchesRepo` name
           then if enabled
