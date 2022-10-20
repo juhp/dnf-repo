@@ -29,6 +29,7 @@ main = do
     runMain
     <$> switchWith 'n' "dryrun" "Dry run"
     <*> switchWith 'D' "debug" "Debug output"
+    <*> switchWith 'l' "list" "List all repos"
     <*> switchLongWith "exact" "Match repo names exactly"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
     <*> optional (flagWith' True 'w' "weak-deps" "Use weak dependencies" <|>
@@ -65,9 +66,9 @@ kojiRepoTemplate = "koji-REPO.repo"
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
-runMain :: Bool -> Bool -> Bool -> Bool -> Maybe Bool -> [Mode] -> [String]
-        -> IO ()
-runMain dryrun debug exact save mweakdeps modes args = do
+runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> [Mode]
+        -> [String] -> IO ()
+runMain dryrun debug listrepos exact save mweakdeps modes args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
@@ -76,7 +77,7 @@ runMain dryrun debug exact save mweakdeps modes args = do
         AddKoji repo -> addKojiRepo repo
         _ -> return ()
     repofiles <- filesWithExtension "." "repo"
---    when debug $ print repofiles
+    -- when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
     let repoActs = selectRepo exact nameStates modes
     unless (null repoActs) $ do
@@ -99,7 +100,8 @@ runMain dryrun debug exact save mweakdeps modes args = do
           "config-manager" :
           concatMap saveRepo repoActs
     if null args
-      then do
+      then
+      when (null repoActs || listrepos) $
       listRepos $ map (updateState repoActs) nameStates
       else do
       sleep 1
