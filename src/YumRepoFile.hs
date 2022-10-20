@@ -113,7 +113,17 @@ selectRepo exact repostates modes =
           enabled == state || Enable repo `elem` acc
         Nothing -> False
 
-    matchesRepo = if exact then (==) else isInfixOf
+    matchesRepo :: String -> String -> Bool
+    matchesRepo "" = error' "empty repo pattern"
+    matchesRepo pat =
+      if exact
+      then (pat ==)
+      else
+        case ('^' == head pat,'$' == last pat) of
+          (True,True) -> (init (tail pat) ==)
+          (True,False) -> (tail pat `isPrefixOf`)
+          (False,True) -> (init pat `isSuffixOf`)
+          _ -> (pat `isInfixOf`)
 
 readRepos :: FilePath -> IO [RepoState]
 readRepos file =
