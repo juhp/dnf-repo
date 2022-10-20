@@ -34,7 +34,14 @@ main = do
     <*> switchWith 's' "save" "Save the repo enable/disable state"
     <*> optional (flagWith' True 'w' "weak-deps" "Use weak dependencies" <|>
                   flagWith' False 'W' "no-weak-deps" "Disable weak dependencies")
-    <*> many modeOpt
+    <*> (many modeOpt <|>
+         (flagLongWith' [Specific EnableModular,
+                         EnableRepo "^fedora-cisco-openh264$"]
+          "enable-defaults" "Enable modular and Cisco h264 repos"
+          <|>
+          flagLongWith [] [Specific DisableModular,
+                           DisableRepo "^fedora-cisco-openh264$"]
+          "disable-defaults" "Disable modular and Cisco h264 repos"))
     <*> many (strArg "DNFARGS")
   where
     repoOptionWith =
