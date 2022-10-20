@@ -1,5 +1,12 @@
 # dnf-repo releases
 
+## 0.4 (2022-10-20)
+- only list all repos if --list or no repo actions
+- repo patterns can now use a ^ prefix and $ suffix
+- add --disable/enable-defaults for Fedora modular and cisco h264 repos
+- add --(no-)weak-deps options (-W/-w)
+- transform / to : in any given repo pattern
+
 ## 0.3 (2022-08-12)
 - fold over multiple changes (eg -m -t now combine correctly)
 - handle debuginfo and source repos

@@ -1,10 +1,12 @@
 # dnf-repo
 
-A wrapper of the  dnf package manager for fine control of enabled/disabled yum repos (eg coprs).
+A wrapper of the dnf package manager for fine control of
+enabled/disabled yum repos (eg coprs).
 
 DNF is not terribly fast at handling repos partly because it likes
 to refresh the cached repodata frequently. So it can be advantageous
-to disable smaller repos by default and only enable them as needed.
+to disable smaller repos by default and only enable them as needed
+(eg periodically).
 
 This tool can temporarily enable/disable repos selected by substring.
 Repo states can also be saved or their cache individually expired.
@@ -16,18 +18,21 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.3
+0.4
 $ dnf-repo --help
 DNF wrapper repo tool
 
-Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [--exact] [-s|--save]
-                [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
-                  (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                  (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT) |
-                  (-t|--enable-testing) | (-T|--disable-testing) |
-                  (-m|--enable-modular) | (-M|--disable-modular) |
-                  --enable-debuginfo | --disable-debuginfo | --enable-source |
-                  --disable-source] [DNFARGS]
+Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [--exact]
+                [-s|--save] [(-w|--weak-deps) | (-W|--no-weak-deps)]
+                [
+                  [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
+                    (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
+                    (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT) |
+                    (-t|--enable-testing) | (-T|--disable-testing) |
+                    (-m|--enable-modular) | (-M|--disable-modular) |
+                    --enable-debuginfo | --disable-debuginfo | --enable-source |
+                    --disable-source] |
+                  --enable-defaults | --disable-defaults] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:
@@ -35,8 +40,11 @@ Available options:
   --version                Show version
   -n,--dryrun              Dry run
   -D,--debug               Debug output
+  -l,--list                List all repos
   --exact                  Match repo names exactly
   -s,--save                Save the repo enable/disable state
+  -w,--weak-deps           Use weak dependencies
+  -W,--no-weak-deps        Disable weak dependencies
   -c,--add-copr COPR       Create repo file for copr repo
   -k,--add-koji REPO       Create repo file for koji repo
   -d,--disable REPOPAT     Disable repos
@@ -52,6 +60,8 @@ Available options:
   --disable-debuginfo      Disable debuginfo repos
   --enable-source          Enable source repos
   --disable-source         Disable source repos
+  --enable-defaults        Enable modular and Cisco h264 repos
+  --disable-defaults       Disable modular and Cisco h264 repos
 ```
 
 ## Usage examples
@@ -83,18 +93,20 @@ Install a package directly from a new copr:
 ```shellsession
 $ dnf-repo -c varlad/helix install helix
 ```
+(note the copr repo is not permanently enabled by default).
 
-Later update with copr:
+Later update with the copr:
 ```shellsession
 $ dnf-repo -e helix update
 ```
 
 ### Changing system repo config
-Disable modular repos permanently:
+Disable modular and cisco h264 repos permanently:
 ```shellsession
-$ dnf-repo --disable-modular --save
+$ dnf-repo --disable-defaults --save
 ```
-(or equivalently `dnf-repo -M -s`).
+
+To only disable modular you can use: `dnf-repo -M -s`.
 
 ### Switch system from rawhide
 Switch a system from Rawhide to F37:
@@ -102,11 +114,16 @@ Switch a system from Rawhide to F37:
 $ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora\*
 ```
 
-## Installation
+### Repo patterns
+By default repo patterns are matched as infix substrings
+(unless you use `--exact`).
 
+But you can also prepend `^`/append `$` (or both) to match a repo name
+from its beginning/end (or exactly).
+
+## Installation
 A copr repo is available:
 <https://copr.fedorainfracloud.org/coprs/petersen/dnf-repo/>
 
 ## Building
-
 Use {cabal,stack,cabal-rpm} install.
