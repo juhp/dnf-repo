@@ -14,15 +14,16 @@ module YumRepoFile (
   )
 where
 
-import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, sort, stripInfix,
-                        trim)
+import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort,
+                        stripInfix, trim)
 import SimpleCmd (error')
 
 type RepoState = (String,(Bool,FilePath))
 
 data Mode = AddCopr String | AddKoji String
           | EnableRepo String | DisableRepo String
-          | ExpireRepo String | DeleteRepo String
+          | ExpireRepo String | ClearExpires
+          | DeleteRepo String
           | Specific SpecificChange
   deriving (Eq, Ord, Show)
 
@@ -42,7 +43,7 @@ repoSubstr DisableDebuginfo = "-debuginfo"
 repoSubstr EnableSource = "-source"
 repoSubstr DisableSource = "-source"
 
-data ChangeEnable = Disable String | Enable String | Expire String
+data ChangeEnable = Disable String | Enable String | Expire String | UnExpire
                   | Delete FilePath
   deriving (Eq,Ord,Show)
 
@@ -74,7 +75,7 @@ updateState (ce:ces) re@(repo,(enabled,file)) =
 
 selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
 selectRepo exact repostates modes =
-  foldr selectRepo' [] (sort modes)
+  nub $ foldr selectRepo' [] (sort modes)
   where
     selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
     selectRepo' mode acc =
@@ -97,6 +98,7 @@ selectRepo exact repostates modes =
           [Disable name | pat `matchesRepo` name, enabled]
         ExpireRepo pat ->
           [Expire name | pat `matchesRepo` name]
+        ClearExpires -> [UnExpire]
         DeleteRepo pat ->
           if pat `matchesRepo` name
           then if enabled

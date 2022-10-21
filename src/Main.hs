@@ -17,7 +17,7 @@ import System.IO.Extra (withTempDir)
 import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
-import ExpireRepos (expireRepos)
+import ExpireRepos
 import Sudo
 import YumRepoFile
 
@@ -53,6 +53,7 @@ main = do
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> repoOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
+      flagWith' ClearExpires 'X' "clear-expires" "Undo cache expirations" <|>
       DeleteRepo <$> repoOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
       flagWith' (Specific EnableTesting) 't' "enable-testing" "Enable testing repos" <|>
       flagWith' (Specific DisableTesting) 'T' "disable-testing" "Disable testing repos" <|>
@@ -92,9 +93,10 @@ runMain dryrun debug listrepos exact save mweakdeps modes args = do
       putStrLn ""
     forM_ modes $
       \case
-        ExpireRepo _ -> do
-          putStrLn ""
+        ExpireRepo _ ->
           expireRepos dryrun debug $ mapMaybe expiring repoActs
+        ClearExpires ->
+          clearExpired dryrun debug
         DeleteRepo _ ->
           mapM_ deleteRepos $ mapMaybe deleting repoActs
         _ -> return ()
@@ -178,22 +180,3 @@ filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
   filter (ext `isExtensionOf`) <$> listDirectory dir
 #endif
-
-prompt :: String -> IO String
-prompt desc = do
-  putStr $ desc ++ ": "
-  getLine
-
-prompt_ :: String -> IO ()
-prompt_ desc = do
-  void $ prompt desc
-
-yesno :: String -> IO Bool
-yesno desc = do
-  inp <- prompt $ desc ++ "? [y/n]"
-  case lower inp of
-    "y" -> return True
-    "yes" -> return True
-    "n" -> return False
-    "no" -> return False
-    _ ->  yesno desc
