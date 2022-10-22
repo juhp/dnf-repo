@@ -18,7 +18,7 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.4
+0.5
 $ dnf-repo --help
 DNF wrapper repo tool
 
@@ -27,11 +27,11 @@ Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [--exact]
                 [
                   [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
                     (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                    (-x|--expire REPOPAT) | (-E|--delete-repofile REPOPAT) |
-                    (-t|--enable-testing) | (-T|--disable-testing) |
-                    (-m|--enable-modular) | (-M|--disable-modular) |
-                    --enable-debuginfo | --disable-debuginfo | --enable-source |
-                    --disable-source] |
+                    (-x|--expire REPOPAT) | (-X|--clear-expires) |
+                    (-E|--delete-repofile REPOPAT) | (-t|--enable-testing) |
+                    (-T|--disable-testing) | (-m|--enable-modular) |
+                    (-M|--disable-modular) | --enable-debuginfo |
+                    --disable-debuginfo | --enable-source | --disable-source] |
                   --enable-defaults | --disable-defaults] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
@@ -46,10 +46,12 @@ Available options:
   -w,--weak-deps           Use weak dependencies
   -W,--no-weak-deps        Disable weak dependencies
   -c,--add-copr COPR       Create repo file for copr repo
-  -k,--add-koji REPO       Create repo file for koji repo
+  -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
+                           epel9-build, etc)
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
   -x,--expire REPOPAT      Expire repo cache
+  -X,--clear-expires       Undo cache expirations
   -E,--delete-repofile REPOPAT
                            Remove unwanted .repo file
   -t,--enable-testing      Enable testing repos
@@ -81,19 +83,19 @@ there is no need to run dnf-repo with sudo.
 ### Copr
 List disabled copr repos (actually shows "copr" repos that would be enabled):
 ```shellsession
-$ dnf-repo -e copr
+$ dnf-repo -e 'copr*'
 ```
 
 Disable all copr repos for update:
 ```shellsession
-$ dnf-repo -d copr update
+$ dnf-repo -d 'copr*' update
 ```
 
 Install a package directly from a new copr:
 ```shellsession
 $ dnf-repo -c varlad/helix install helix
 ```
-(note the copr repo is not permanently enabled by default).
+(note the copr repo is not permanently enabled).
 
 Later update with the copr:
 ```shellsession
@@ -101,7 +103,7 @@ $ dnf-repo -e helix update
 ```
 
 ### Changing system repo config
-Disable modular and cisco h264 repos permanently:
+Disable fedora modular and cisco h264 repos permanently:
 ```shellsession
 $ dnf-repo --disable-defaults --save
 ```
@@ -121,7 +123,7 @@ By default repo patterns are matched as infix substrings
 But you can also prepend `^`/append `$` (or both) to match a repo name
 from its beginning/end (or exactly).
 
-You can also use glob patterns for match repo names:
+You can also use glob patterns to match repo names:
 see https://hackage.haskell.org/package/Glob/docs/System-FilePath-Glob.html#v:compile for the supported syntax.
 
 ## Installation
@@ -130,3 +132,10 @@ A copr repo is available:
 
 ## Building
 Use {cabal,stack,cabal-rpm} install.
+
+## Contributing
+The source repository is https://github.com/juhp/dnf-repo/
+
+dnf-repo is currently distributed under a BSD license.
+
+Contributions including suggestions for improvement are welcome.

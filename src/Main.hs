@@ -141,6 +141,7 @@ runMain dryrun debug listrepos exact save mweakdeps modes args = do
               unless dryrun $ writeFile tmpfile repodef
               doSudo dryrun debug "cp" [tmpfile, repofile]
 
+      -- FIXME check url exists!
       addKojiRepo :: String -> IO ()
       addKojiRepo repo = do
         template <- getDataFileName kojiRepoTemplate

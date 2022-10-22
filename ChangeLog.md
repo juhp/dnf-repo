@@ -1,5 +1,11 @@
 # dnf-repo releases
 
+## 0.5 (2022-10-23)
+- support repo Glob patterns
+- repo pattern now only matches one (first) repo by default (without glob)
+- add --clear-expires command; expire commands now prompt
+- abort if no match for repopat action
+
 ## 0.4 (2022-10-20)
 - only list all repos if --list or no repo actions
 - repo patterns can now use a ^ prefix and $ suffix
