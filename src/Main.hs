@@ -49,7 +49,7 @@ main = do
 
     modeOpt =
       AddCopr <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
-      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo" <|>
+      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f37-build, rawhide, epel9-build, etc)" <|>
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> repoOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
