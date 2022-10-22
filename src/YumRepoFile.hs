@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module YumRepoFile (
   Mode(..),
   SpecificChange(..),
@@ -17,6 +15,7 @@ where
 import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort,
                         stripInfix, trim)
 import SimpleCmd (error')
+import System.FilePath.Glob (compile, match)
 
 type RepoState = (String,(Bool,FilePath))
 
@@ -120,17 +119,28 @@ selectRepo exact repostates modes =
           enabled == state || Enable repo `elem` acc
         Nothing -> False
 
+    isGlob :: String -> Bool
+    isGlob pat = any (`elem` pat) "*?["
+
     matchesRepo :: String -> String -> Bool
     matchesRepo "" = error' "empty repo pattern"
-    matchesRepo pat =
-      if exact
-      then (pat ==)
-      else
-        case ('^' == head pat,'$' == last pat) of
-          (True,True) -> (init (tail pat) ==)
-          (True,False) -> (tail pat `isPrefixOf`)
-          (False,True) -> (init pat `isSuffixOf`)
-          _ -> (pat `isInfixOf`)
+    matchesRepo pat
+      | isGlob pat = (match . compile) $
+        if exact
+        then pat
+        else
+          case ('^' == head pat,'$' == last pat) of
+            (True,True) -> init (tail pat)
+            (True,False) -> tail pat ++ ['*' | last pat /= '*']
+            (False,True) -> ['*' | head pat /= '*'] ++ init pat
+            _ -> ['*' | head pat /= '*'] ++ pat ++ ['*' | last pat /= '*']
+      | exact = (pat ==)
+      | otherwise =
+          case ('^' == head pat,'$' == last pat) of
+            (True,True) -> (init (tail pat) ==)
+            (True,False) -> (tail pat `isPrefixOf`)
+            (False,True) -> (init pat `isSuffixOf`)
+            _ -> (pat `isInfixOf`)
 
 readRepos :: FilePath -> IO [RepoState]
 readRepos file =

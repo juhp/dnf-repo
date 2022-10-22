@@ -121,6 +121,9 @@ By default repo patterns are matched as infix substrings
 But you can also prepend `^`/append `$` (or both) to match a repo name
 from its beginning/end (or exactly).
 
+You can also use glob patterns for match repo names:
+see https://hackage.haskell.org/package/Glob/docs/System-FilePath-Glob.html#v:compile for the supported syntax.
+
 ## Installation
 A copr repo is available:
 <https://copr.fedorainfracloud.org/coprs/petersen/dnf-repo/>
