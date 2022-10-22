@@ -14,6 +14,7 @@ where
 
 import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort,
                         stripInfix, trim)
+import Data.Maybe (mapMaybe)
 import SimpleCmd (error')
 import System.FilePath.Glob (compile, match)
 
@@ -25,6 +26,16 @@ data Mode = AddCopr String | AddKoji String
           | DeleteRepo String
           | Specific SpecificChange
   deriving (Eq, Ord, Show)
+
+modePattern :: Mode -> Maybe String
+modePattern (AddCopr c) = Just c
+modePattern (AddKoji k) = Just k
+modePattern (EnableRepo r) = Just r
+modePattern (DisableRepo r) = Just r
+modePattern (ExpireRepo r) = Just r
+modePattern ClearExpires = Nothing
+modePattern (DeleteRepo r) = Just r
+modePattern (Specific _) = Nothing
 
 data SpecificChange = EnableModular | DisableModular
                     | EnableTesting | DisableTesting
@@ -74,43 +85,66 @@ updateState (ce:ces) re@(repo,(enabled,file)) =
 
 selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
 selectRepo exact repostates modes =
-  nub $ foldr selectRepo' [] (sort modes)
+  nub $ foldr selectRepo' [] (nub (sort modes))
   where
     selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
     selectRepo' mode acc =
-      let result = concatMap (selectRepoMode mode acc) repostates
+      let result = mapMaybe (selectRepoMode mode acc) repostates
       in
         if null result
         then error' ("no match for repo pattern action: " ++ show mode)
-        else acc ++ result
+        else acc ++
+             case modePattern mode of
+               Nothing -> result
+               Just p ->
+                 if isGlob p
+                 then result
+                 else take 1 result
 
-    selectRepoMode :: Mode -> [ChangeEnable] -> RepoState -> [ChangeEnable]
+    -- FIXME warn if already in requested state
+    selectRepoMode :: Mode -> [ChangeEnable] -> RepoState -> Maybe ChangeEnable
     selectRepoMode mode acc (name,(enabled,file)) =
       case mode of
         AddCopr repo ->
-          [Enable name | repo `isSuffixOf` name, not enabled]
+          if repo `isSuffixOf` name && not enabled
+          then Just (Enable name)
+          else Nothing
         AddKoji repo ->
-          [Enable name | repo `isSuffixOf` name, not enabled]
+          if repo `isSuffixOf` name && not enabled
+          then Just (Enable name)
+          else Nothing
         EnableRepo pat ->
-          [Enable name | pat `matchesRepo` name, not enabled]
+          if pat `matchesRepo` name && not enabled
+          then Just (Enable name)
+          else Nothing
         DisableRepo pat ->
-          [Disable name | pat `matchesRepo` name, enabled]
+          if pat `matchesRepo` name && enabled
+          then Just (Disable name)
+          else Nothing
         ExpireRepo pat ->
-          [Expire name | pat `matchesRepo` name]
-        ClearExpires -> [UnExpire]
+          if pat `matchesRepo` name
+          then Just (Expire name)
+          else Nothing
+        ClearExpires -> Just UnExpire
         DeleteRepo pat ->
           if pat `matchesRepo` name
           then if enabled
                then error' $ "disable repo before deleting: " ++ name
-               else [Delete file]
-          else []
+               else Just (Delete file)
+          else Nothing
         Specific change ->
           let substr =  repoSubstr change in
             if change `elem`
                [EnableModular,EnableTesting,EnableDebuginfo,EnableSource]
-            then [Enable name | substr `isInfixOf` name, not enabled,
-                  repoStatus acc (removeInfix substr name) True]
-            else [Disable name | substr `isInfixOf` name, enabled]
+            then
+              if substr `isInfixOf` name && not enabled &&
+                 repoStatus acc (removeInfix substr name) True
+              then Just (Enable name)
+              else Nothing
+            else
+              if substr `isInfixOf` name && enabled
+              then Just (Disable name)
+              else Nothing
 
     repoStatus :: [ChangeEnable] -> String -> Bool -> Bool
     repoStatus acc repo state =
