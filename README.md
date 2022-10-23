@@ -111,6 +111,16 @@ $ dnf-repo --disable-defaults --save
 
 To only disable modular you can use: `dnf-repo -M -s`.
 
+### Use source repos
+```shellsession
+$ dnf-repo -d \* --enable-source
+Enable "fedora-source"
+Enable "updates-source"
+Disable "fedora"
+Disable "updates"
+
+```
+
 ### Switch system from rawhide
 Switch a system from Rawhide to F37:
 ```shellsession

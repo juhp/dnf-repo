@@ -15,6 +15,7 @@ tests =
   ,["-e", "rawhide"]
   ,["-d", "update"]
   ,["--enable-source"]
+  ,["-d", "*", "--enable-source"]
   ]
 
 main :: IO ()
