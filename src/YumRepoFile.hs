@@ -83,11 +83,11 @@ updateState (ce:ces) re@(repo,(enabled,file)) =
     Enable r | r == repo && not enabled -> (repo,(True,file))
     _ -> updateState ces re
 
-selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
+selectRepo :: Bool -> [RepoState] -> [Mode] -> [Either String ChangeEnable]
 selectRepo exact repostates modes =
   nub $ foldr selectRepo' [] (nub (sort modes))
   where
-    selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
+    selectRepo' :: Mode -> [Either String ChangeEnable] -> [Either String ChangeEnable]
     selectRepo' mode acc =
       let result = mapMaybe (selectRepoMode mode acc) repostates
       in
@@ -101,56 +101,57 @@ selectRepo exact repostates modes =
                  then result
                  else take 1 result
 
-    -- FIXME warn if already in requested state
-    selectRepoMode :: Mode -> [ChangeEnable] -> RepoState -> Maybe ChangeEnable
+    selectRepoMode :: Mode -> [Either String ChangeEnable] -> RepoState
+                   -> Maybe (Either String ChangeEnable)
     selectRepoMode mode acc (name,(enabled,file)) =
       case mode of
         AddCopr repo ->
-          if repo `isSuffixOf` name && not enabled
-          then Just (Enable name)
-          else Nothing
+          maybeEither repo isSuffixOf (not enabled) (Enable name)
         AddKoji repo ->
-          if repo `isSuffixOf` name && not enabled
-          then Just (Enable name)
-          else Nothing
+          maybeEither repo isSuffixOf (not enabled) (Enable name)
         EnableRepo pat ->
-          if pat `matchesRepo` name && not enabled
-          then Just (Enable name)
-          else Nothing
+          maybeEither pat matchesRepo (not enabled) (Enable name)
         DisableRepo pat ->
-          if pat `matchesRepo` name && enabled
-          then Just (Disable name)
-          else Nothing
+          maybeEither pat matchesRepo enabled (Disable name)
         ExpireRepo pat ->
-          if pat `matchesRepo` name
-          then Just (Expire name)
-          else Nothing
-        ClearExpires -> Just UnExpire
+          maybeEither pat matchesRepo True (Expire name)
+        ClearExpires -> Just (Right UnExpire)
         DeleteRepo pat ->
-          if pat `matchesRepo` name
-          then if enabled
-               then error' $ "disable repo before deleting: " ++ name
-               else Just (Delete file)
-          else Nothing
+          maybeEither pat matchesRepo
+          (not enabled || error ("disable repo before deleting: " ++ name))
+          (Delete file)
         Specific change ->
           let substr =  repoSubstr change in
             if change `elem`
                [EnableModular,EnableTesting,EnableDebuginfo,EnableSource]
             then
-              if substr `isInfixOf` name && not enabled &&
-                 repoStatus acc (removeInfix substr name) True
-              then Just (Enable name)
-              else Nothing
+              maybeEither substr
+              (\p n -> p `isInfixOf` n &&
+                       repoStatus acc (removeInfix substr name) True)
+              (not enabled) (Enable name)
             else
-              if substr `isInfixOf` name && enabled
-              then Just (Disable name)
-              else Nothing
+              maybeEither substr isInfixOf enabled (Disable name)
+      where
+        maybeEither :: String -> (String -> String -> Bool) -> Bool
+                    -> ChangeEnable -> Maybe (Either String ChangeEnable)
+        maybeEither pat matcher state change =
+          if pat `matcher` name
+          then
+            if state
+            then Just $ Right change
+            else
+              if isGlob pat
+              then Nothing
+              else Just $ Left $
+                   name ++ " is already " ++
+                   if enabled then "enabled" else "disabled"
+          else Nothing
 
-    repoStatus :: [ChangeEnable] -> String -> Bool -> Bool
+    repoStatus :: [Either String ChangeEnable] -> String -> Bool -> Bool
     repoStatus acc repo state =
       case lookup repo repostates of
         Just (enabled,_) ->
-          enabled == state || Enable repo `elem` acc
+          enabled == state || Right (Enable repo) `elem` acc
         Nothing -> False
 
     isGlob :: String -> Bool

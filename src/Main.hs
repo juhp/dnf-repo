@@ -6,6 +6,7 @@ module Main (main) where
 
 import Control.Monad.Extra
 import Data.Bifunctor (bimap)
+import Data.Either (partitionEithers)
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
 import SimpleCmd
@@ -74,100 +75,103 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
       \case
-        AddCopr copr -> addCoprRepo copr
-        AddKoji repo -> addKojiRepo repo
+        AddCopr copr -> addCoprRepo dryrun debug copr
+        AddKoji repo -> addKojiRepo dryrun debug repo
         _ -> return ()
     repofiles <- filesWithExtension "." "repo"
     -- when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
-    let repoActs = selectRepo exact nameStates modes
-    unless (null repoActs) $ do
-      mapM_ print repoActs
-      putStrLn ""
-    forM_ modes $
-      \case
-        ExpireRepo _ ->
-          expireRepos dryrun debug $ mapMaybe expiring repoActs
-        ClearExpires ->
-          clearExpired dryrun debug
-        DeleteRepo _ ->
-          mapM_ deleteRepos $ mapMaybe deleting repoActs
-        _ -> return ()
-    when save $
-      if null repoActs
-        then putStrLn "no changes to save\n"
-        else do
-        prompt_ "Press Enter to save repo enabled state"
-        doSudo dryrun debug "dnf" $
-          "config-manager" :
-          concatMap saveRepo repoActs
-    if null args
-      then
-      when (null repoActs || listrepos) $
-      listRepos $ map (updateState repoActs) nameStates
+    let (errs,actions) = partitionEithers $ selectRepo exact nameStates modes
+    if not (null errs)
+      then mapM_ putStrLn errs
       else do
-      sleep 1
-      putStrLn ""
-      let repoargs = concatMap changeRepo repoActs
-          weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
-        in doSudo dryrun debug "dnf" $ repoargs ++ weakdeps ++ args
-    where
-      -- FIXME pull non-fedora copr repo file
-      -- FIXME delete created copr repo file if repo doesn't exist
-      addCoprRepo :: String -> IO ()
-      addCoprRepo repo = do
-        case stripInfix ":" repo of
-          Nothing -> error' $ "invalid copr: " ++ repo
-          Just (copr_owner,copr_repo) -> do
-            template <- getDataFileName coprRepoTemplate
-            repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
-            let repofile = ("_copr:" ++) $
-                           replace "COLON" ":" $
-                           replace "OWNER" copr_owner $
-                           replace "REPO" copr_repo coprRepoTemplate
-            exists <- doesFileExist repofile
-            if exists
-              then error' $ "repo already defined: " ++ repofile
-              else putStrLn $ "Setting up copr repo " ++ repo
-            withTempDir $ \ tmpdir -> do
-              let tmpfile = tmpdir </> repofile
-              unless dryrun $ writeFile tmpfile repodef
-              doSudo dryrun debug "cp" [tmpfile, repofile]
-
-      -- FIXME check url exists!
-      addKojiRepo :: String -> IO ()
-      addKojiRepo repo = do
-        template <- getDataFileName kojiRepoTemplate
-        repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
-        let repofile = replace "REPO" repo kojiRepoTemplate
-        exists <- doesFileExist repofile
-        if exists
-          then error' $ "repo already defined: " ++ repofile
-          else putStrLn $ "Setting up koji repo " ++ repo
-        withTempDir $ \ tmpdir -> do
-          let tmpfile = tmpdir </> repofile
-          unless dryrun $ writeFile tmpfile repodef
-          doSudo dryrun debug "cp" [tmpfile, repofile]
-
-      listRepos :: [RepoState] -> IO ()
-      listRepos repoStates = do
-        let (on,off) =
-              -- can't this be simplified?
-              bimap (map fst) (map fst) $ partition (fst . snd) repoStates
-        putStrLn "Enabled:"
-        mapM_ putStrLn on
+      unless (null actions) $ do
+        mapM_ print actions
         putStrLn ""
-        putStrLn "Disabled:"
-        mapM_ putStrLn off
+      forM_ modes $
+        \case
+          ExpireRepo _ ->
+            expireRepos dryrun debug $ mapMaybe expiring actions
+          ClearExpires ->
+            clearExpired dryrun debug
+          DeleteRepo _ ->
+            mapM_ (deleteRepos dryrun debug) $ mapMaybe deleting actions
+          _ -> return ()
+      when save $
+        if null actions
+          then putStrLn "no changes to save\n"
+          else do
+          prompt_ "Press Enter to save repo enabled state"
+          doSudo dryrun debug "dnf" $
+            "config-manager" :
+            concatMap saveRepo actions
+      if null args
+        then
+        when (null actions || listrepos) $
+        listRepos $ map (updateState actions) nameStates
+        else do
+        sleep 1
+        putStrLn ""
+        let repoargs = concatMap changeRepo actions
+            weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
+          in doSudo dryrun debug "dnf" $ repoargs ++ weakdeps ++ args
 
-      deleteRepos :: FilePath -> IO ()
-      deleteRepos repofile = do
-        mowned <- cmdMaybe "rpm" ["-qf", "/etc/yum.repos.d" </> repofile]
-        case mowned of
-          Just owner -> error' $ repofile +-+ "owned by" +-+ owner
-          Nothing -> do
-            ok <- yesno $ "Remove " ++ takeFileName repofile
-            when ok $ doSudo dryrun debug "rm" [repofile]
+-- FIXME pull non-fedora copr repo file
+-- FIXME delete created copr repo file if repo doesn't exist
+addCoprRepo :: Bool -> Bool -> String -> IO ()
+addCoprRepo dryrun debug repo = do
+  case stripInfix ":" repo of
+    Nothing -> error' $ "invalid copr: " ++ repo
+    Just (copr_owner,copr_repo) -> do
+      template <- getDataFileName coprRepoTemplate
+      repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
+      let repofile = ("_copr:" ++) $
+                     replace "COLON" ":" $
+                     replace "OWNER" copr_owner $
+                     replace "REPO" copr_repo coprRepoTemplate
+      exists <- doesFileExist repofile
+      if exists
+        then error' $ "repo already defined: " ++ repofile
+        else putStrLn $ "Setting up copr repo " ++ repo
+      withTempDir $ \ tmpdir -> do
+        let tmpfile = tmpdir </> repofile
+        unless dryrun $ writeFile tmpfile repodef
+        doSudo dryrun debug "cp" [tmpfile, repofile]
+
+-- FIXME check url exists!
+addKojiRepo :: Bool -> Bool -> String -> IO ()
+addKojiRepo dryrun debug repo = do
+  template <- getDataFileName kojiRepoTemplate
+  repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
+  let repofile = replace "REPO" repo kojiRepoTemplate
+  exists <- doesFileExist repofile
+  if exists
+    then error' $ "repo already defined: " ++ repofile
+    else putStrLn $ "Setting up koji repo " ++ repo
+  withTempDir $ \ tmpdir -> do
+    let tmpfile = tmpdir </> repofile
+    unless dryrun $ writeFile tmpfile repodef
+    doSudo dryrun debug "cp" [tmpfile, repofile]
+
+listRepos :: [RepoState] -> IO ()
+listRepos repoStates = do
+  let (on,off) =
+        -- can't this be simplified?
+        bimap (map fst) (map fst) $ partition (fst . snd) repoStates
+  putStrLn "Enabled:"
+  mapM_ putStrLn on
+  putStrLn ""
+  putStrLn "Disabled:"
+  mapM_ putStrLn off
+
+deleteRepos :: Bool -> Bool -> FilePath -> IO ()
+deleteRepos dryrun debug repofile = do
+  mowned <- cmdMaybe "rpm" ["-qf", "/etc/yum.repos.d" </> repofile]
+  case mowned of
+    Just owner -> error' $ repofile +-+ "owned by" +-+ owner
+    Nothing -> do
+      ok <- yesno $ "Remove " ++ takeFileName repofile
+      when ok $ doSudo dryrun debug "rm" [repofile]
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]
