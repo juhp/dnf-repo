@@ -27,15 +27,14 @@ DNF wrapper repo tool
 
 Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [-s|--save]
                 [(-w|--weak-deps) | (-W|--no-weak-deps)] [--exact]
-                [
-                  [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
-                    (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                    (-x|--expire REPOPAT) | (-X|--clear-expires) |
-                    (-E|--delete-repofile REPOPAT) | (-t|--enable-testing) |
-                    (-T|--disable-testing) | (-m|--enable-modular) |
-                    (-M|--disable-modular) | --enable-debuginfo |
-                    --disable-debuginfo | --enable-source | --disable-source] |
-                  --enable-defaults | --disable-defaults] [DNFARGS]
+                [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
+                  (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
+                  (-x|--expire REPOPAT) | (-X|--clear-expires) |
+                  (-E|--delete-repofile REPOPAT) | (-t|--enable-testing) |
+                  (-T|--disable-testing) | (-m|--enable-modular) |
+                  (-M|--disable-modular) | --enable-debuginfo |
+                  --disable-debuginfo | --enable-source | --disable-source]
+                [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:
@@ -65,8 +64,6 @@ Available options:
   --disable-debuginfo      Disable debuginfo repos
   --enable-source          Enable source repos
   --disable-source         Disable source repos
-  --enable-defaults        Enable modular and Cisco h264 repos
-  --disable-defaults       Disable modular and Cisco h264 repos
 ```
 
 ## Usage examples
@@ -108,10 +105,8 @@ $ dnf-repo -e helix update
 ### Changing system repo config
 Disable fedora modular and cisco h264 repos permanently:
 ```shellsession
-$ dnf-repo --disable-defaults --save
+$ dnf-repo --M -d h264$ --save
 ```
-
-To only disable modular you can use: `dnf-repo -M -s`.
 
 ### Use only source repos
 ```shellsession
