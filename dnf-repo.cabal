@@ -59,3 +59,15 @@ executable dnf-repo
                        -Wpartial-fields
   if impl(ghc >= 8.10)
     ghc-options:       -Wunused-packages
+
+test-suite test
+    main-is: tests.hs
+    type: exitcode-stdio-1.0
+    hs-source-dirs: test
+
+    default-language: Haskell2010
+
+    ghc-options:   -Wall
+    build-depends: base >= 4 && < 5,
+                   simple-cmd
+    build-tool-depends: dnf-repo:dnf-repo

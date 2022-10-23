@@ -9,7 +9,8 @@ to disable smaller repos by default and only enable them as needed
 (eg periodically).
 
 This tool can temporarily enable/disable repos selected by substring.
-Repo states can also be saved or their cache individually expired.
+Repo enabled/disabled state changes can also be saved,
+or their cache individually expired.
 
 There are options to enable/disable testing/modular repos,
 and also to create a repo file for a Copr or Koji repo.
@@ -69,10 +70,10 @@ Available options:
 ## Usage examples
 List repos:
 ```shellsession
-$ dnf-repo
+$ dnf-repo [--list]
 ```
 
-Update with testing repos:
+Update with testing repos enabled:
 ```shellsession
 $ dnf-repo -t update
 ```
@@ -86,7 +87,7 @@ List disabled copr repos (actually shows "copr" repos that would be enabled):
 $ dnf-repo -e 'copr*'
 ```
 
-Disable all copr repos for update:
+Disable active copr repos for update:
 ```shellsession
 $ dnf-repo -d 'copr*' update
 ```
@@ -113,7 +114,7 @@ To only disable modular you can use: `dnf-repo -M -s`.
 ### Switch system from rawhide
 Switch a system from Rawhide to F37:
 ```shellsession
-$ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora\*
+$ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora-\*
 ```
 
 ### Repo patterns

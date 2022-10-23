@@ -5,6 +5,7 @@
 - repo pattern now only matches one (first) repo by default (without glob)
 - add --clear-expires command; expire commands now prompt
 - abort if no match for repopat action
+- simple testsuite
 
 ## 0.4 (2022-10-20)
 - only list all repos if --list or no repo actions
