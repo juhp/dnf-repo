@@ -1,7 +1,8 @@
 # dnf-repo
 
 A wrapper of the dnf package manager for fine control of
-enabled/disabled yum repos (eg coprs).
+enabled/disabled yum repos (eg coprs).  dnf is the package manager used
+by Fedora Linux and also modern RHEL.
 
 DNF is not terribly fast at handling repos partly because it likes
 to refresh the cached repodata frequently. So it can be advantageous
@@ -9,10 +10,11 @@ to disable smaller repos by default and only enable them as needed
 (eg periodically).
 
 This tool can temporarily enable/disable repos selected by substring.
-Repo enabled/disabled state changes can also be saved,
-or their cache individually expired.
+Repo enabled states can also be saved
+It is also possible to expire repos' caches individually.
 
-There are options to enable/disable testing/modular repos,
+There are options to enable/disable testing/modular repos
+(and even source/debuginfo repos),
 and also to create a repo file for a Copr or Koji repo.
 
 ## Help
@@ -82,7 +84,7 @@ Note that sudo is used implicitly when needed:
 there is no need to run dnf-repo with sudo.
 
 ### Copr
-List disabled copr repos (actually shows "copr" repos that would be enabled):
+List disabled copr repos (ie lists copr repos that would be enabled):
 ```shellsession
 $ dnf-repo -e 'copr*'
 ```
@@ -111,7 +113,7 @@ $ dnf-repo --disable-defaults --save
 
 To only disable modular you can use: `dnf-repo -M -s`.
 
-### Use source repos
+### Use only source repos
 ```shellsession
 $ dnf-repo -d \* --enable-source
 Enable "fedora-source"
@@ -135,7 +137,7 @@ But you can also prepend `^`/append `$` (or both) to match a repo name
 from its beginning/end (or exactly).
 
 You can also use glob patterns to match repo names:
-see https://hackage.haskell.org/package/Glob/docs/System-FilePath-Glob.html#v:compile for the supported syntax.
+see the [supported Glob syntax](https://hackage.haskell.org/package/Glob/docs/System-FilePath-Glob.html#v:compile).
 
 ## Installation
 A copr repo is available:
