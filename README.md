@@ -23,8 +23,8 @@ $ dnf-repo --version
 $ dnf-repo --help
 DNF wrapper repo tool
 
-Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [--exact]
-                [-s|--save] [(-w|--weak-deps) | (-W|--no-weak-deps)]
+Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [-s|--save]
+                [(-w|--weak-deps) | (-W|--no-weak-deps)] [--exact]
                 [
                   [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
                     (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
@@ -42,10 +42,10 @@ Available options:
   -n,--dryrun              Dry run
   -D,--debug               Debug output
   -l,--list                List all repos
-  --exact                  Match repo names exactly
   -s,--save                Save the repo enable/disable state
   -w,--weak-deps           Use weak dependencies
   -W,--no-weak-deps        Disable weak dependencies
+  --exact                  Match repo names exactly
   -c,--add-copr COPR       Create repo file for copr repo
   -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
                            epel9-build, etc)
