@@ -103,31 +103,31 @@ selectRepo exact repostates modes =
   where
     selectRepo' :: Mode -> [Either String ChangeEnable] -> [Either String ChangeEnable]
     selectRepo' mode acc =
-      let result = nub $ mapMaybe (selectRepoMode mode acc) repostates
+      let results = nub $ mapMaybe (selectRepoMode mode acc) repostates
       in
-        case result of
+        case results of
           [] -> error' ("no match for repo pattern action: " ++ show mode)
-          [_] -> acc ++ result
+          [_] -> acc ++ results
           _ ->
             acc ++
             case modePattern mode of
-              Nothing -> result
+              Nothing -> results
               Just p ->
                 if isGlob p
-                then result
+                then results
                 else
                   let actNames =
-                        mapMaybe (\a -> (a,) <$> repoName a) $ rights result
+                        mapMaybe (\a -> (a,) <$> repoName a) $ rights results
                   in
                     if null actNames
-                    then result
+                    then results
                     else
                       let (base,basename) =
                             head $ sortOn (length . snd) actNames
                       in
                         if all (basename `isPrefixOf`) $ map snd actNames
                         then [Right base]
-                        else result
+                        else results
 
     selectRepoMode :: Mode -> [Either String ChangeEnable] -> RepoState
                    -> Maybe (Either String ChangeEnable)
