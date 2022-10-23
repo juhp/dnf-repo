@@ -83,12 +83,12 @@ there is no need to run dnf-repo with sudo.
 ### Copr
 List disabled copr repos (ie lists copr repos that would be enabled):
 ```shellsession
-$ dnf-repo -e 'copr*'
+$ dnf-repo -e copr
 ```
 
 Disable active copr repos for update:
 ```shellsession
-$ dnf-repo -d 'copr*' update
+$ dnf-repo -d copr update
 ```
 
 Install a package directly from a new copr:

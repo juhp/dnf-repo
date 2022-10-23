@@ -1,3 +1,6 @@
+{-# LANGUAGE TupleSections #-}
+
+
 module YumRepoFile (
   Mode(..),
   SpecificChange(..),
@@ -12,7 +15,8 @@ module YumRepoFile (
   )
 where
 
-import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort,
+import Data.Either (rights)
+import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort, sortOn,
                         stripInfix, trim)
 import Data.Maybe (mapMaybe)
 import SimpleCmd (error')
@@ -53,9 +57,19 @@ repoSubstr DisableDebuginfo = "-debuginfo"
 repoSubstr EnableSource = "-source"
 repoSubstr DisableSource = "-source"
 
-data ChangeEnable = Disable String | Enable String | Expire String | UnExpire
+data ChangeEnable = Disable String
+                  | Enable String
+                  | Expire String
+                  | UnExpire
                   | Delete FilePath
   deriving (Eq,Ord,Show)
+
+repoName :: ChangeEnable -> Maybe String
+repoName (Disable r) = Just r
+repoName (Enable r) = Just r
+repoName (Expire r) = Just r
+repoName UnExpire = Nothing
+repoName (Delete _) = Nothing
 
 changeRepo :: ChangeEnable -> [String]
 changeRepo (Disable r) = ["--disablerepo", r]
@@ -89,17 +103,31 @@ selectRepo exact repostates modes =
   where
     selectRepo' :: Mode -> [Either String ChangeEnable] -> [Either String ChangeEnable]
     selectRepo' mode acc =
-      let result = mapMaybe (selectRepoMode mode acc) repostates
+      let result = nub $ mapMaybe (selectRepoMode mode acc) repostates
       in
-        if null result
-        then error' ("no match for repo pattern action: " ++ show mode)
-        else acc ++
-             case modePattern mode of
-               Nothing -> result
-               Just p ->
-                 if isGlob p
-                 then result
-                 else take 1 result
+        case result of
+          [] -> error' ("no match for repo pattern action: " ++ show mode)
+          [_] -> acc ++ result
+          _ ->
+            acc ++
+            case modePattern mode of
+              Nothing -> result
+              Just p ->
+                if isGlob p
+                then result
+                else
+                  let actNames =
+                        mapMaybe (\a -> (a,) <$> repoName a) $ rights result
+                  in
+                    if null actNames
+                    then result
+                    else
+                      let (base,basename) =
+                            head $ sortOn (length . snd) actNames
+                      in
+                        if all (basename `isPrefixOf`) $ map snd actNames
+                        then [Right base]
+                        else result
 
     selectRepoMode :: Mode -> [Either String ChangeEnable] -> RepoState
                    -> Maybe (Either String ChangeEnable)

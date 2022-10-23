@@ -10,7 +10,6 @@ tests =
   [["-t"]
   ,["-m"]
   ,["-e", "copr"]
-  ,["-e", "copr*"]
   ,["-e", "openh264"]
   ,["-e", "rawhide"]
   ,["-d", "update"]
