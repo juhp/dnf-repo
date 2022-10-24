@@ -22,8 +22,10 @@ expireRepos dryrun debug repos = do
     doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow expired ++ "/",
                                expiredFile]
-    unless dryrun $
+    unless dryrun $ do
+      putStrLn ""
       putStrLn $ "marked expired in " ++ expiredFile
+  putStrLn ""
 
 renderShow :: [String] -> String
 renderShow = render . show
@@ -46,4 +48,6 @@ clearExpired dryrun debug = do
       doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow [] ++ "/",
                                expiredFile]
+      putStrLn ""
       putStrLn $ "expirations cleared in " ++ expiredFile
+    putStrLn ""

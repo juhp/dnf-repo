@@ -90,24 +90,24 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
           expireRepos dryrun debug $ mapMaybe expiring actions
         ClearExpires ->
           clearExpired dryrun debug
-        DeleteRepo _ ->
+        DeleteRepo _ -> do
           mapM_ (deleteRepo dryrun debug) $ mapMaybe deleting actions
+          putStrLn ""
         _ -> return ()
-    when save $
+    when save $ do
       if null actions
-        then putStrLn "no changes to save\n"
+        then putStrLn "no changes to save"
         else do
         prompt_ "Press Enter to save repo enabled state"
         doSudo dryrun debug "dnf" $
-          "config-manager" :
-          concatMap saveRepo actions
+          "config-manager" : concatMap saveRepo actions
+      putStrLn ""
     if null args
       then
       when (null actions || listrepos) $
       listRepos $ map (updateState actions) nameStates
       else do
       sleep 1
-      putStrLn ""
       let repoargs = concatMap changeRepo actions
           weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
         in doSudo dryrun debug "dnf" $ repoargs ++ weakdeps ++ args
@@ -133,6 +133,7 @@ addCoprRepo dryrun debug repo = do
         let tmpfile = tmpdir </> repofile
         unless dryrun $ writeFile tmpfile repodef
         doSudo dryrun debug "cp" [tmpfile, repofile]
+        putStrLn ""
 
 -- FIXME check url exists!
 addKojiRepo :: Bool -> Bool -> String -> IO ()
@@ -148,6 +149,7 @@ addKojiRepo dryrun debug repo = do
     let tmpfile = tmpdir </> repofile
     unless dryrun $ writeFile tmpfile repodef
     doSudo dryrun debug "cp" [tmpfile, repofile]
+    putStrLn ""
 
 listRepos :: [RepoState] -> IO ()
 listRepos repoStates = do
@@ -167,7 +169,8 @@ deleteRepo dryrun debug repofile = do
     Just owner -> warning $ repofile +-+ "owned by" +-+ owner
     Nothing -> do
       ok <- yesno $ "Remove " ++ takeFileName repofile
-      when ok $ doSudo dryrun debug "rm" [repofile]
+      when ok $ do
+        doSudo dryrun debug "rm" [repofile]
 
 #if !MIN_VERSION_simple_cmd(0,2,4)
 filesWithExtension :: FilePath -> String -> IO [FilePath]

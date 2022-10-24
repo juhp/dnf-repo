@@ -16,7 +16,6 @@ doSudo dryrun debug c args = do
     else do
     when debug $ cmdN c args
     sudo_ c args
-  putStrLn ""
 
 prompt :: String -> IO String
 prompt desc = do
