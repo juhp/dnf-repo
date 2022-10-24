@@ -1,19 +1,20 @@
 # dnf-repo
 
 A wrapper of the dnf package manager for fine control of
-enabled/disabled yum repos (eg coprs).  dnf is the package manager used
-by Fedora Linux and also modern RHEL.
+enabled/disabled yum repos (eg coprs).
 
-DNF is not terribly fast at handling repos partly because it likes
+dnf is the package manager used by Fedora Linux and also modern RHEL.
+
+DNF is a bit slow at handling multiple repos because it attempts
 to refresh the cached repodata frequently. So it can be advantageous
 to disable smaller repos by default and only enable them as needed
 (eg periodically).
 
-This tool can temporarily enable/disable repos selected by substring.
-Repo enabled states can also be saved
+This tool can temporarily enable/disable repo(s) selected by substring(s).
+Changes to repos' enabled states can be saved too.
 It is also possible to expire repos' caches individually.
 
-There are options to enable/disable testing/modular repos
+There are also smart options to enable/disable testing/modular repos
 (and even source/debuginfo repos),
 and also to create a repo file for a Copr or Koji repo.
 
@@ -131,8 +132,11 @@ By default repo patterns are matched as infix substrings
 But you can also prepend `^`/append `$` (or both) to match a repo name
 from its beginning/end (or exactly).
 
-You can also use glob patterns to match repo names:
+You can also use glob patterns to match one or more repo names:
 see the [supported Glob syntax](https://hackage.haskell.org/package/Glob/docs/System-FilePath-Glob.html#v:compile).
+
+Note that initial `^` and final `$` also work together with glob patterns,
+even though they are not part of the Glob library.
 
 ## Installation
 A copr repo is available:
