@@ -61,20 +61,26 @@ data ChangeEnable = Disable String Bool
                   | Delete FilePath Bool
   deriving (Eq,Ord,Show)
 
-printAction :: ChangeEnable -> IO ()
-printAction (Disable r s) =
+printAction :: Bool -> ChangeEnable -> IO ()
+printAction save (Disable r s) =
   if s
-  then putStrLn $ "with " ++ quote r ++ " disabled"
+  then putStrLn $
+       if save
+       then "disable " ++ quote r
+       else "with " ++ quote r ++ " disabled"
   else warning $ quote r ++ " already disabled"
-printAction (Enable r s) =
+printAction save (Enable r s) =
   if s
-  then putStrLn $ "with " ++ quote r ++ " enabled"
+  then putStrLn $
+       if save
+       then "enable " ++ quote r
+       else "with " ++ quote r ++ " enabled"
   else warning $ quote r ++ " already enabled"
-printAction (Expire r) =
+printAction _ (Expire r) =
   putStrLn $ "expire " ++ quote r
-printAction UnExpire =
+printAction _ UnExpire =
   putStrLn "unexpire:"
-printAction (Delete f s) =
+printAction _ (Delete f s) =
   if s
   then putStrLn $ "delete " ++ quote f
   else warning $ quote f ++ " deletion skipped"
