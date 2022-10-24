@@ -140,8 +140,8 @@ see the [supported Glob syntax](https://hackage.haskell.org/package/Glob/docs/Sy
 Without a glob (eg '*') a shortest common repo match will be sought,
 otherwise all matching repos will be considered.
 
-Note that initial `^` and final `$` also work together with glob patterns,
-even though they are not part of the Glob library.
+An initial `^` (final `$`) in a glob pattern prevents
+the automatic prepending (appending) of `*` before (after) the pattern.
 
 ## Installation
 A copr repo is available:
