@@ -28,14 +28,13 @@ DNF wrapper repo tool
 
 Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [-s|--save]
                 [(-w|--weak-deps) | (-W|--no-weak-deps)] [--exact]
-                [(-c|--add-copr COPR) | (-k|--add-koji REPO) |
-                  (-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
+                [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
                   (-x|--expire REPOPAT) | (-X|--clear-expires) |
                   (-E|--delete-repofile REPOPAT) | (-t|--enable-testing) |
                   (-T|--disable-testing) | (-m|--enable-modular) |
                   (-M|--disable-modular) | --enable-debuginfo |
-                  --disable-debuginfo | --enable-source | --disable-source]
-                [DNFARGS]
+                  --disable-debuginfo | --enable-source | --disable-source |
+                  (-c|--add-copr COPR) | (-k|--add-koji REPO)] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:
@@ -48,9 +47,6 @@ Available options:
   -w,--weak-deps           Use weak dependencies
   -W,--no-weak-deps        Disable weak dependencies
   --exact                  Match repo names exactly
-  -c,--add-copr COPR       Create repo file for copr repo
-  -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
-                           epel9-build, etc)
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
   -x,--expire REPOPAT      Expire repo cache
@@ -65,6 +61,9 @@ Available options:
   --disable-debuginfo      Disable debuginfo repos
   --enable-source          Enable source repos
   --disable-source         Disable source repos
+  -c,--add-copr COPR       Create repo file for copr repo
+  -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
+                           epel9-build, etc)
 ```
 
 ## Usage examples

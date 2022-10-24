@@ -41,8 +41,6 @@ main = do
       (fmap . fmap . fmap . fmap) (replace "/" ":") . strOptionWith
 
     modeOpt =
-      AddCopr <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
-      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f37-build, rawhide, epel9-build, etc)" <|>
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> repoOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
@@ -55,7 +53,9 @@ main = do
       flagLongWith' (Specific EnableDebuginfo) "enable-debuginfo" "Enable debuginfo repos" <|>
       flagLongWith' (Specific DisableDebuginfo) "disable-debuginfo" "Disable debuginfo repos" <|>
       flagLongWith' (Specific EnableSource) "enable-source" "Enable source repos" <|>
-      flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos"
+      flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos" <|>
+      AddCopr <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
+      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f37-build, rawhide, epel9-build, etc)"
 
 coprRepoTemplate :: FilePath
 coprRepoTemplate = "copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo"
