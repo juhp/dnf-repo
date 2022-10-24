@@ -104,9 +104,9 @@ $ dnf-repo -e helix update
 ```
 
 ### Changing system repo config
-Disable fedora modular and cisco h264 repos permanently:
+Disable fedora modular and cisco openh264 repos permanently:
 ```shellsession
-$ dnf-repo --M -d h264$ --save
+$ dnf-repo --M -d h264 --save
 ```
 
 ### Use only source repos
@@ -134,6 +134,9 @@ from its beginning/end (or exactly).
 
 You can also use glob patterns to match one or more repo names:
 see the [supported Glob syntax](https://hackage.haskell.org/package/Glob/docs/System-FilePath-Glob.html#v:compile).
+
+Without a glob (eg '*') a shortest common repo match will be sought,
+otherwise all matching repos will be considered.
 
 Note that initial `^` and final `$` also work together with glob patterns,
 even though they are not part of the Glob library.

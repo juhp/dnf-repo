@@ -1,11 +1,9 @@
-{-# LANGUAGE TupleSections #-}
-
-
 module YumRepoFile (
   Mode(..),
   SpecificChange(..),
   readRepos,
   RepoState,
+  renderAction,
   selectRepo,
   changeRepo,
   saveRepo,
@@ -15,7 +13,6 @@ module YumRepoFile (
   )
 where
 
-import Data.Either (rights)
 import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort, sortOn,
                         stripInfix, trim)
 import Data.Maybe (mapMaybe)
@@ -57,28 +54,41 @@ repoSubstr DisableDebuginfo = "-debuginfo"
 repoSubstr EnableSource = "-source"
 repoSubstr DisableSource = "-source"
 
-data ChangeEnable = Disable String
-                  | Enable String
+data ChangeEnable = Disable String Bool
+                  | Enable String Bool
                   | Expire String
                   | UnExpire
-                  | Delete FilePath
+                  | Delete FilePath Bool
   deriving (Eq,Ord,Show)
 
-repoName :: ChangeEnable -> Maybe String
-repoName (Disable r) = Just r
-repoName (Enable r) = Just r
-repoName (Expire r) = Just r
-repoName UnExpire = Nothing
-repoName (Delete _) = Nothing
+renderAction :: ChangeEnable -> String
+renderAction (Disable r s) =
+  if s then "disabling " ++ quote r else quote r ++ " already disabled"
+renderAction (Enable r s) =
+  if s then "enabling " ++ quote r else quote r ++ " already enabled"
+renderAction (Expire r) = "expiring " ++ quote r
+renderAction UnExpire = "unexpiring:"
+renderAction (Delete f s) =
+  if s then "deleting " ++ quote f else quote f ++ " deletion skipped"
+
+quote :: String -> String
+quote s = '\'' : s ++ "'"
+
+maybeRepoName :: ChangeEnable -> Maybe (ChangeEnable, String)
+maybeRepoName d@(Disable r _) = Just (d, r)
+maybeRepoName e@(Enable r _) = Just (e, r)
+maybeRepoName x@(Expire r) = Just (x, r)
+maybeRepoName UnExpire = Nothing
+maybeRepoName (Delete _ _) = Nothing
 
 changeRepo :: ChangeEnable -> [String]
-changeRepo (Disable r) = ["--disablerepo", r]
-changeRepo (Enable r) = ["--enablerepo", r]
+changeRepo (Disable r True) = ["--disablerepo", r]
+changeRepo (Enable r True) = ["--enablerepo", r]
 changeRepo _ = []
 
 saveRepo :: ChangeEnable -> [String]
-saveRepo (Disable r) = ["--disable", r]
-saveRepo (Enable r) = ["--enable", r]
+saveRepo (Disable r True) = ["--disable", r]
+saveRepo (Enable r True) = ["--enable", r]
 saveRepo _ = []
 
 expiring :: ChangeEnable -> Maybe String
@@ -86,22 +96,23 @@ expiring (Expire r) = Just r
 expiring _ = Nothing
 
 deleting :: ChangeEnable -> Maybe String
-deleting (Delete r) = Just r
+deleting (Delete r True) = Just r
 deleting _ = Nothing
 
 updateState :: [ChangeEnable] -> RepoState -> RepoState
 updateState [] rs = rs
 updateState (ce:ces) re@(repo,(enabled,file)) =
   case ce of
-    Disable r | r == repo && enabled -> (repo,(False,file))
-    Enable r | r == repo && not enabled -> (repo,(True,file))
+    -- FIXME can probably drop enable/not enabled
+    Disable r True | r == repo && enabled -> (repo,(False,file))
+    Enable r True | r == repo && not enabled -> (repo,(True,file))
     _ -> updateState ces re
 
-selectRepo :: Bool -> [RepoState] -> [Mode] -> [Either String ChangeEnable]
+selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
 selectRepo exact repostates modes =
   nub $ foldr selectRepo' [] (nub (sort modes))
   where
-    selectRepo' :: Mode -> [Either String ChangeEnable] -> [Either String ChangeEnable]
+    selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
     selectRepo' mode acc =
       let results = nub $ mapMaybe (selectRepoMode mode acc) repostates
       in
@@ -116,36 +127,34 @@ selectRepo exact repostates modes =
                 if isGlob p
                 then results
                 else
-                  let actNames =
-                        mapMaybe (\a -> (a,) <$> repoName a) $ rights results
+                  let actNames = mapMaybe maybeRepoName results
                   in
                     if null actNames
                     then results
                     else
-                      let (base,basename) =
-                            head $ sortOn (length . snd) actNames
+                      let base = head $ sortOn (length . snd) actNames
                       in
-                        if all (basename `isPrefixOf`) $ map snd actNames
-                        then [Right base]
+                        if all ((snd base `isPrefixOf`) . snd) actNames
+                        then [fst base]
                         else results
 
-    selectRepoMode :: Mode -> [Either String ChangeEnable] -> RepoState
-                   -> Maybe (Either String ChangeEnable)
+    selectRepoMode :: Mode -> [ChangeEnable] -> RepoState
+                   -> Maybe ChangeEnable
     selectRepoMode mode acc (name,(enabled,file)) =
       case mode of
         AddCopr repo ->
-          maybeEither repo isSuffixOf (not enabled) (Enable name)
+          maybeChange repo isSuffixOf (not enabled) (Enable name)
         AddKoji repo ->
-          maybeEither repo isSuffixOf (not enabled) (Enable name)
+          maybeChange repo isSuffixOf (not enabled) (Enable name)
         EnableRepo pat ->
-          maybeEither pat matchesRepo (not enabled) (Enable name)
+          maybeChange pat matchesRepo (not enabled) (Enable name)
         DisableRepo pat ->
-          maybeEither pat matchesRepo enabled (Disable name)
+          maybeChange pat matchesRepo enabled (Disable name)
         ExpireRepo pat ->
-          maybeEither pat matchesRepo True (Expire name)
-        ClearExpires -> Just (Right UnExpire)
+          maybeChange pat matchesRepo True (const (Expire name))
+        ClearExpires -> Just UnExpire
         DeleteRepo pat ->
-          maybeEither pat matchesRepo
+          maybeChange pat matchesRepo
           (not enabled || error ("disable repo before deleting: " ++ name))
           (Delete file)
         Specific change ->
@@ -153,33 +162,31 @@ selectRepo exact repostates modes =
             if change `elem`
                [EnableModular,EnableTesting,EnableDebuginfo,EnableSource]
             then
-              maybeEither substr
+              maybeChange substr
               (\p n -> p `isInfixOf` n &&
-                       repoStatus acc (removeInfix substr name) True)
+                       repoStatus acc (removeInfix substr name))
               (not enabled) (Enable name)
             else
-              maybeEither substr isInfixOf enabled (Disable name)
+              maybeChange substr isInfixOf enabled (Disable name)
       where
-        maybeEither :: String -> (String -> String -> Bool) -> Bool
-                    -> ChangeEnable -> Maybe (Either String ChangeEnable)
-        maybeEither pat matcher state change =
+        maybeChange :: String -> (String -> String -> Bool) -> Bool
+                    -> (Bool -> ChangeEnable) -> Maybe ChangeEnable
+        maybeChange pat matcher state change =
           if pat `matcher` name
           then
             if state
-            then Just $ Right change
+            then Just $ change True
             else
               if isGlob pat
               then Nothing
-              else Just $ Left $
-                   name ++ " is already " ++
-                   if enabled then "enabled" else "disabled"
+              else Just $ change False
           else Nothing
 
-    repoStatus :: [Either String ChangeEnable] -> String -> Bool -> Bool
-    repoStatus acc repo state =
+    repoStatus :: [ChangeEnable] -> String -> Bool
+    repoStatus acc repo =
       case lookup repo repostates of
         Just (enabled,_) ->
-          enabled == state || Right (Enable repo) `elem` acc
+          enabled || Enable repo True `elem` acc
         Nothing -> False
 
     isGlob :: String -> Bool

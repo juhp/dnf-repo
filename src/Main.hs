@@ -6,7 +6,6 @@ module Main (main) where
 
 import Control.Monad.Extra
 import Data.Bifunctor (bimap)
-import Data.Either (partitionEithers)
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
 import SimpleCmd
@@ -81,12 +80,9 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
     repofiles <- filesWithExtension "." "repo"
     -- when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
-    let (errs,actions) = partitionEithers $ selectRepo exact nameStates modes
-    unless (null errs) $ do
-      mapM_ putStrLn errs
-      putStrLn ""
+    let actions = selectRepo exact nameStates modes
     unless (null actions) $ do
-      mapM_ print actions
+      mapM_ (putStrLn . renderAction) actions
       putStrLn ""
     forM_ modes $
       \case
@@ -107,7 +103,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
           concatMap saveRepo actions
     if null args
       then
-      when (null actions && null errs || listrepos) $
+      when (null actions || listrepos) $
       listRepos $ map (updateState actions) nameStates
       else do
       sleep 1
