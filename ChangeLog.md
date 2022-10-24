@@ -2,9 +2,12 @@
 
 ## 0.5 (2022-10-23)
 - support repo Glob patterns
-- repo pattern now only matches one (first) repo by default (without glob)
+- prefer shortest common prefix repo match if not glob
 - add --clear-expires command; expire commands now prompt
 - abort if no match for repopat action
+- accumulate repostate unchanged warnings
+- drop overspecific --disable/--enable-defaults
+- more consistent output, particularly newlines
 - simple testsuite
 
 ## 0.4 (2022-10-20)
