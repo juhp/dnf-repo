@@ -4,6 +4,7 @@ import System.IO
 program :: [String] -> IO ()
 program test = do
   cmdLog "dnf-repo" test
+  putStrLn ""
 
 tests :: [[String]]
 tests =

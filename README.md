@@ -115,13 +115,16 @@ with 'fedora-source' enabled
 with 'updates-source' enabled
 with 'fedora' disabled
 with 'updates' disabled
-
 ```
 
 ### Switch system from rawhide
 Switch a system from Rawhide to F37:
 ```shellsession
-$ dnf-repo --exact -d rawhide -e fedora distrosync --releasever 37 fedora-\*
+$ dnf-repo -d rawhide -e fedora distrosync --releasever 37 fedora-\*
+with 'rawhide' disabled
+with 'fedora' enabled
+
+:
 ```
 
 ### Repo patterns

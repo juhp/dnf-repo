@@ -80,9 +80,11 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
     -- when debug $ print repofiles
     nameStates <- sort <$> concatMapM readRepos repofiles
     let actions = selectRepo exact nameStates modes
+        moreoutput = not (null args) || null actions || listrepos
     unless (null actions) $ do
       mapM_ (printAction save) actions
-      putStrLn ""
+      when moreoutput $
+        putStrLn ""
     outputs <-
       forM actions $
       \case
@@ -96,7 +98,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
           deleteRepo dryrun debug repofile
           return True
         _ -> return False
-    when (or outputs) $
+    when (or outputs && (save || moreoutput)) $
       putStrLn ""
     when save $ do
       if null actions
