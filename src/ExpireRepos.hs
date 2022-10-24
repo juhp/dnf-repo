@@ -1,31 +1,28 @@
 module ExpireRepos (
-  expireRepos,
+  expireRepo,
   clearExpired
   ) where
 
 import Control.Monad
 import Data.List (nub)
-import SimpleCmd (error')
 
 import Sudo
 
 expiredFile :: FilePath
 expiredFile = "/var/cache/dnf/expired_repos.json"
 
-expireRepos :: Bool -> Bool -> [String] -> IO ()
-expireRepos _ _ [] = error' "no repos to expire given"
-expireRepos dryrun debug repos = do
+expireRepo :: Bool -> Bool -> String -> IO ()
+expireRepo dryrun debug repo = do
   old <- read <$> readFile expiredFile :: IO [String]
-  let expired = nub $ old ++ repos
-  ok <- yesno "Expire caches of above repos"
+  let expired = nub $ old ++ [repo]
+  ok <- yesno $ "Expire cache of " ++ repo
   when ok $ do
     doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow expired ++ "/",
                                expiredFile]
     unless dryrun $ do
       putStrLn ""
-      putStrLn $ "marked expired in " ++ expiredFile
-  putStrLn ""
+      putStrLn $ repo ++ " marked expired in " ++ expiredFile
 
 renderShow :: [String] -> String
 renderShow = render . show
@@ -50,4 +47,3 @@ clearExpired dryrun debug = do
                                expiredFile]
       putStrLn ""
       putStrLn $ "expirations cleared in " ++ expiredFile
-    putStrLn ""

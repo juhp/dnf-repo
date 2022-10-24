@@ -3,6 +3,7 @@ module YumRepoFile (
   SpecificChange(..),
   readRepos,
   RepoState,
+  ChangeEnable(Expire,UnExpire,Delete),
   printAction,
   selectRepo,
   changeRepo,

@@ -7,7 +7,6 @@ module Main (main) where
 import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.List.Extra
-import Data.Maybe (mapMaybe)
 import SimpleCmd
 import SimpleCmdArgs
 import System.Directory
@@ -84,16 +83,21 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
     unless (null actions) $ do
       mapM_ (printAction save) actions
       putStrLn ""
-    forM_ modes $
+    outputs <-
+      forM actions $
       \case
-        ExpireRepo _ ->
-          expireRepos dryrun debug $ mapMaybe expiring actions
-        ClearExpires ->
+        Expire repo -> do
+          expireRepo dryrun debug repo
+          return True
+        UnExpire -> do
           clearExpired dryrun debug
-        DeleteRepo _ -> do
-          mapM_ (deleteRepo dryrun debug) $ mapMaybe deleting actions
-          putStrLn ""
-        _ -> return ()
+          return True
+        Delete repofile True -> do
+          deleteRepo dryrun debug repofile
+          return True
+        _ -> return False
+    when (or outputs) $
+      putStrLn ""
     when save $ do
       if null actions
         then putStrLn "no changes to save"
