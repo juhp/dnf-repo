@@ -82,7 +82,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
     nameStates <- sort <$> concatMapM readRepos repofiles
     let actions = selectRepo exact nameStates modes
     unless (null actions) $ do
-      mapM_ (putStrLn . renderAction) actions
+      mapM_ printAction actions
       putStrLn ""
     forM_ modes $
       \case

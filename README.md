@@ -111,10 +111,10 @@ $ dnf-repo --M -d h264 --save
 ### Use only source repos
 ```shellsession
 $ dnf-repo -d \* --enable-source
-Enable "fedora-source"
-Enable "updates-source"
-Disable "fedora"
-Disable "updates"
+with 'fedora-source' enabled
+with 'updates-source' enabled
+with 'fedora' disabled
+with 'updates' disabled
 
 ```
 

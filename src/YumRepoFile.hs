@@ -3,7 +3,7 @@ module YumRepoFile (
   SpecificChange(..),
   readRepos,
   RepoState,
-  renderAction,
+  printAction,
   selectRepo,
   changeRepo,
   saveRepo,
@@ -16,7 +16,7 @@ where
 import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort, sortOn,
                         stripInfix, trim)
 import Data.Maybe (mapMaybe)
-import SimpleCmd (error')
+import SimpleCmd (error', warning)
 import System.FilePath.Glob (compile, match)
 
 type RepoState = (String,(Bool,FilePath))
@@ -61,15 +61,23 @@ data ChangeEnable = Disable String Bool
                   | Delete FilePath Bool
   deriving (Eq,Ord,Show)
 
-renderAction :: ChangeEnable -> String
-renderAction (Disable r s) =
-  if s then "disabling " ++ quote r else quote r ++ " already disabled"
-renderAction (Enable r s) =
-  if s then "enabling " ++ quote r else quote r ++ " already enabled"
-renderAction (Expire r) = "expiring " ++ quote r
-renderAction UnExpire = "unexpiring:"
-renderAction (Delete f s) =
-  if s then "deleting " ++ quote f else quote f ++ " deletion skipped"
+printAction :: ChangeEnable -> IO ()
+printAction (Disable r s) =
+  if s
+  then putStrLn $ "with " ++ quote r ++ " disabled"
+  else warning $ quote r ++ " already disabled"
+printAction (Enable r s) =
+  if s
+  then putStrLn $ "with " ++ quote r ++ " enabled"
+  else warning $ quote r ++ " already enabled"
+printAction (Expire r) =
+  putStrLn $ "expire " ++ quote r
+printAction UnExpire =
+  putStrLn "unexpire:"
+printAction (Delete f s) =
+  if s
+  then putStrLn $ "delete " ++ quote f
+  else warning $ quote f ++ " deletion skipped"
 
 quote :: String -> String
 quote s = '\'' : s ++ "'"
