@@ -22,8 +22,8 @@ expireRepos dryrun debug repos = do
     doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow expired ++ "/",
                                expiredFile]
-  putStrLn $ "marked expired in " ++ expiredFile
-
+    unless dryrun $
+      putStrLn $ "marked expired in " ++ expiredFile
 
 renderShow :: [String] -> String
 renderShow = render . show
@@ -41,7 +41,7 @@ clearExpired dryrun debug = do
     else do
     mapM_ putStrLn old
     putStrLn ""
-    ok <- yesno "Unset these expirations"
+    ok <- yesno "Unset cache expirations"
     when ok $ do
       doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow [] ++ "/",
