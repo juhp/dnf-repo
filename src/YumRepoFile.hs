@@ -77,8 +77,7 @@ printAction save (Enable r s) =
        then "enable " ++ quote r
        else "with " ++ quote r ++ " enabled"
   else warning $ quote r ++ " already enabled"
-printAction _ (Expire r) =
-  putStrLn $ "expire " ++ quote r
+printAction _ (Expire _) = return ()
 printAction _ UnExpire =
   putStrLn "unexpire:"
 printAction _ (Delete f s) =

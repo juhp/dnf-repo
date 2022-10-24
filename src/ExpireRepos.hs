@@ -15,7 +15,7 @@ expireRepo :: Bool -> Bool -> String -> IO ()
 expireRepo dryrun debug repo = do
   old <- read <$> readFile expiredFile :: IO [String]
   let expired = nub $ old ++ [repo]
-  ok <- yesno $ "Expire cache of " ++ repo
+  ok <- yesno $ "Mark '" ++ repo ++ "' cache expired"
   when ok $ do
     doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow expired ++ "/",
