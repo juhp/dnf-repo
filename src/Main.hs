@@ -91,7 +91,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
         ClearExpires ->
           clearExpired dryrun debug
         DeleteRepo _ ->
-          mapM_ (deleteRepos dryrun debug) $ mapMaybe deleting actions
+          mapM_ (deleteRepo dryrun debug) $ mapMaybe deleting actions
         _ -> return ()
     when save $
       if null actions
@@ -160,11 +160,11 @@ listRepos repoStates = do
   putStrLn "Disabled:"
   mapM_ putStrLn off
 
-deleteRepos :: Bool -> Bool -> FilePath -> IO ()
-deleteRepos dryrun debug repofile = do
+deleteRepo :: Bool -> Bool -> FilePath -> IO ()
+deleteRepo dryrun debug repofile = do
   mowned <- cmdMaybe "rpm" ["-qf", "/etc/yum.repos.d" </> repofile]
   case mowned of
-    Just owner -> error' $ repofile +-+ "owned by" +-+ owner
+    Just owner -> warning $ repofile +-+ "owned by" +-+ owner
     Nothing -> do
       ok <- yesno $ "Remove " ++ takeFileName repofile
       when ok $ doSudo dryrun debug "rm" [repofile]
