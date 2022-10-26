@@ -27,6 +27,7 @@ main = do
     "see https://github.com/juhp/dnf-repo#readme" $
     runMain
     <$> switchWith 'n' "dryrun" "Dry run"
+    <*> switchWith 'q' "quiet" "Suppress necessary output"
     <*> switchWith 'D' "debug" "Debug output"
     <*> switchWith 'l' "list" "List all repos"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
@@ -67,9 +68,9 @@ kojiRepoTemplate = "koji-REPO.repo"
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
-runMain :: Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool -> [Mode]
+runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool -> [Mode]
         -> [String] -> IO ()
-runMain dryrun debug listrepos save mweakdeps exact modes args = do
+runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
   hSetBuffering stdout NoBuffering
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
@@ -82,7 +83,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
     nameStates <- sort <$> concatMapM readRepos repofiles
     let actions = selectRepo exact nameStates modes
         moreoutput = not (null args) || null actions || listrepos
-    unless (null actions) $ do
+    unless (null actions || quiet) $ do
       mapM_ (printAction save) actions
       when moreoutput $
         warning ""
@@ -99,7 +100,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
           deleteRepo dryrun debug repofile
           return True
         _ -> return False
-    when (or outputs && (save || moreoutput)) $
+    when (or outputs && (save || moreoutput) && not quiet) $
       warning ""
     when save $ do
       if null actions
@@ -117,7 +118,8 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
       sleep 1
       let repoargs = concatMap changeRepo actions
           weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
-        in doSudo dryrun debug "dnf" $ repoargs ++ weakdeps ++ args
+          quietopt = if quiet then ("-q" :) else id
+        in doSudo dryrun debug "dnf" $ quietopt repoargs ++ weakdeps ++ args
 
 -- FIXME pull non-fedora copr repo file
 -- FIXME delete created copr repo file if repo doesn't exist
