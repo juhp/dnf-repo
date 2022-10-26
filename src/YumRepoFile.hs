@@ -14,15 +14,16 @@ module YumRepoFile (
   )
 where
 
-import Data.List.Extra (isPrefixOf, isInfixOf, isSuffixOf, nub, sort, sortOn,
-                        stripInfix, trim)
+import Data.List.Extra (dropPrefix, dropSuffix,
+                        isPrefixOf, isInfixOf, isSuffixOf, nub,
+                        replace, sort, sortOn, stripInfix, trim)
 import Data.Maybe (mapMaybe)
 import SimpleCmd (error', warning)
 import System.FilePath.Glob (compile, match)
 
 type RepoState = (String,(Bool,FilePath))
 
-data Mode = AddCopr String | AddKoji String
+data Mode = AddCopr String | AddKoji String | RepoURL String
           | EnableRepo String | DisableRepo String
           | ExpireRepo String | ClearExpires
           | DeleteRepo String
@@ -32,6 +33,7 @@ data Mode = AddCopr String | AddKoji String
 modePattern :: Mode -> Maybe String
 modePattern (AddCopr c) = Just c
 modePattern (AddKoji k) = Just k
+modePattern (RepoURL _) = Nothing
 modePattern (EnableRepo r) = Just r
 modePattern (DisableRepo r) = Just r
 modePattern (ExpireRepo r) = Just r
@@ -85,6 +87,7 @@ printAction _ (Delete f s) =
   if s
   then putStrLn $ "delete " ++ quote f
   else warning $ quote f ++ " deletion skipped"
+printAction _ (BaseURL _) = return ()
 
 quote :: String -> String
 quote s = '\'' : s ++ "'"
@@ -95,10 +98,18 @@ maybeRepoName e@(Enable r _) = Just (e, r)
 maybeRepoName x@(Expire r) = Just (x, r)
 maybeRepoName UnExpire = Nothing
 maybeRepoName (Delete _ _) = Nothing
+maybeRepoName (BaseURL _) = Nothing
 
 changeRepo :: ChangeEnable -> [String]
 changeRepo (Disable r True) = ["--disablerepo", r]
 changeRepo (Enable r True) = ["--enablerepo", r]
+changeRepo (BaseURL url) = ["--repofrompath", repoUrlName ++ "," ++ url]
+  where
+    repoUrlName = replace "/" ":" $
+                  dropSuffix "/" $
+                  dropPrefix "http://" $
+                  dropPrefix "https://" url
+
 changeRepo _ = []
 
 saveRepo :: ChangeEnable -> [String]
@@ -161,6 +172,7 @@ selectRepo exact repostates modes =
           maybeChange repo isSuffixOf (not enabled) (Enable name)
         AddKoji repo ->
           maybeChange repo isSuffixOf (not enabled) (Enable name)
+        RepoURL url -> Just $ BaseURL url
         EnableRepo pat ->
           maybeChange pat matchesRepo (not enabled) (Enable name)
         DisableRepo pat ->

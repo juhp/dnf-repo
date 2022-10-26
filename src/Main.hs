@@ -54,7 +54,8 @@ main = do
       flagLongWith' (Specific EnableSource) "enable-source" "Enable source repos" <|>
       flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos" <|>
       AddCopr <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
-      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f37-build, rawhide, epel9-build, etc)"
+      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f37-build, rawhide, epel9-build, etc)" <|>
+      RepoURL <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
 
 coprRepoTemplate :: FilePath
 coprRepoTemplate = "copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo"
