@@ -60,22 +60,23 @@ data ChangeEnable = Disable String Bool
                   | Expire String
                   | UnExpire
                   | Delete FilePath Bool
+                  | BaseURL String
   deriving (Eq,Ord,Show)
 
 printAction :: Bool -> ChangeEnable -> IO ()
 printAction save (Disable r s) =
   if s
-  then putStrLn $
-       if save
-       then "disable " ++ quote r
-       else "with " ++ quote r ++ " disabled"
+  then
+    if save
+    then putStrLn $ "disable " ++ quote r
+    else warning $ "with " ++ quote r ++ " disabled"
   else warning $ quote r ++ " already disabled"
 printAction save (Enable r s) =
   if s
-  then putStrLn $
-       if save
-       then "enable " ++ quote r
-       else "with " ++ quote r ++ " enabled"
+  then
+    if save
+    then putStrLn $ "enable " ++ quote r
+    else warning $ "with " ++ quote r ++ " enabled"
   else warning $ quote r ++ " already enabled"
 printAction _ (Expire _) = return ()
 printAction _ UnExpire =

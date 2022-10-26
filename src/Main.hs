@@ -84,7 +84,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
     unless (null actions) $ do
       mapM_ (printAction save) actions
       when moreoutput $
-        putStrLn ""
+        warning ""
     outputs <-
       forM actions $
       \case
@@ -99,7 +99,7 @@ runMain dryrun debug listrepos save mweakdeps exact modes args = do
           return True
         _ -> return False
     when (or outputs && (save || moreoutput)) $
-      putStrLn ""
+      warning ""
     when save $ do
       if null actions
         then putStrLn "no changes to save"
