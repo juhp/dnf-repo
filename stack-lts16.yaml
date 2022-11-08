@@ -1,0 +1,4 @@
+resolver: lts-16.31
+extra-deps:
+  - simple-cmd-args-0.1.8
+  - http-directory-0.1.9

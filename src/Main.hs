@@ -7,6 +7,7 @@ module Main (main) where
 import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.List.Extra
+import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
 import System.Directory
@@ -125,12 +126,13 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         in doSudo dryrun debug "dnf" $ quietopt repoargs ++ weakdeps ++ args
 
 -- FIXME pull non-fedora copr repo file
--- FIXME delete created copr repo file if repo doesn't exist
 addCoprRepo :: Bool -> Bool -> String -> IO ()
 addCoprRepo dryrun debug repo = do
   case stripInfix ":" repo of
     Nothing -> error' $ "invalid copr: " ++ repo
     Just (copr_owner,copr_repo) -> do
+      let repourl = "https://download.copr.fedorainfracloud.org/results" +/+ copr_owner +/+ copr_repo
+      unlessM (httpExists' repourl) $ error' $ "no such copr repo: " ++ repourl
       template <- getDataFileName coprRepoTemplate
       repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
       let repofile = ("_copr:" ++) $
@@ -147,9 +149,10 @@ addCoprRepo dryrun debug repo = do
         doSudo dryrun debug "cp" [tmpfile, repofile]
         putStrLn ""
 
--- FIXME check url exists!
 addKojiRepo :: Bool -> Bool -> String -> IO ()
 addKojiRepo dryrun debug repo = do
+  let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "/latest/x86_64/"
+  unlessM (httpExists' repourl) $ error' $ "no such koji repo: " ++ repourl
   template <- getDataFileName kojiRepoTemplate
   repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
   let repofile = replace "REPO" repo kojiRepoTemplate
