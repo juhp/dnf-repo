@@ -154,8 +154,8 @@ A copr repo is available:
 Use {cabal,stack,cabal-rpm} install.
 
 ## Contributing
-The source repository is https://github.com/juhp/dnf-repo/
-
 dnf-repo is currently distributed under a BSD license.
+
+The source repository is https://github.com/juhp/dnf-repo/
 
 Contributions including reports and suggestions for improvement are welcome.
