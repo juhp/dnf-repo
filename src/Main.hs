@@ -38,7 +38,10 @@ main = do
     <*> many (strArg "DNFARGS")
   where
     repoOptionWith =
-      (fmap . fmap . fmap . fmap) (replace "/" ":") . strOptionWith
+      (fmap . fmap . fmap . fmap) cleanupReponame . strOptionWith
+      where
+        cleanupReponame =
+          dropWhileEnd (== ':') . replace "/" ":" . dropWhile (== '/')
 
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
