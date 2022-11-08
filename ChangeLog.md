@@ -1,5 +1,13 @@
 # dnf-repo releases
 
+## 0.5.1 (2022-11-08)
+- check if new copr or koji repo exists with http-directory
+- remove initial/trailing / or : from reponames
+- add --quiet option: limits output to dnf --quiet and permanent changes
+- add --repourl to use a repo baseurl
+- output state info to stderr
+- expire: don't print action and tweak prompt
+
 ## 0.5 (2022-10-23)
 - support repo Glob patterns
 - prefer shortest common prefix repo match if not glob

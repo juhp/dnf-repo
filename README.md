@@ -1,14 +1,14 @@
 # dnf-repo
 
 A wrapper of the dnf package manager for fine control of
-enabled/disabled yum repos (eg coprs).
+enabled/disabled yum repos (eg Copr repos).
 
 dnf is the package manager used by Fedora Linux and also modern RHEL.
 
 DNF is a bit slow at handling multiple repos because it attempts
 to refresh the cached repodata frequently. So it can be advantageous
 to disable smaller repos by default and only enable them as needed
-(eg periodically).
+periodically.
 
 This tool can temporarily enable/disable repo(s) selected by substring(s).
 Changes to repos' enabled states can be saved too.
@@ -22,25 +22,27 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.5
+0.5.1
 $ dnf-repo --help
 DNF wrapper repo tool
 
-Usage: dnf-repo [--version] [-n|--dryrun] [-D|--debug] [-l|--list] [-s|--save]
-                [(-w|--weak-deps) | (-W|--no-weak-deps)] [--exact]
+Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
+                [-s|--save] [(-w|--weak-deps) | (-W|--no-weak-deps)] [--exact]
                 [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
                   (-x|--expire REPOPAT) | (-X|--clear-expires) |
                   (-E|--delete-repofile REPOPAT) | (-t|--enable-testing) |
                   (-T|--disable-testing) | (-m|--enable-modular) |
                   (-M|--disable-modular) | --enable-debuginfo |
                   --disable-debuginfo | --enable-source | --disable-source |
-                  (-c|--add-copr COPR) | (-k|--add-koji REPO)] [DNFARGS]
+                  (-c|--add-copr COPR) | (-k|--add-koji REPO) |
+                  (-u|--repourl URL)] [DNFARGS]
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:
   -h,--help                Show this help text
   --version                Show version
   -n,--dryrun              Dry run
+  -q,--quiet               Suppress necessary output
   -D,--debug               Debug output
   -l,--list                List all repos
   -s,--save                Save the repo enable/disable state
@@ -64,6 +66,7 @@ Available options:
   -c,--add-copr COPR       Create repo file for copr repo
   -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
                            epel9-build, etc)
+  -u,--repourl URL         temporary repo from a baseurl
 ```
 
 ## Usage examples
@@ -155,4 +158,4 @@ The source repository is https://github.com/juhp/dnf-repo/
 
 dnf-repo is currently distributed under a BSD license.
 
-Contributions including suggestions for improvement are welcome.
+Contributions including reports and suggestions for improvement are welcome.
