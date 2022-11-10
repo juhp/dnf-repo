@@ -5,6 +5,7 @@ module YumRepoFile (
   RepoState,
   ChangeEnable(Expire,UnExpire,Delete),
   printAction,
+  reduceOutput,
   selectRepo,
   changeRepo,
   saveRepo,
@@ -14,11 +15,12 @@ module YumRepoFile (
   )
 where
 
+import Data.Either (partitionEithers)
 import Data.List.Extra (dropPrefix, dropSuffix,
                         isPrefixOf, isInfixOf, isSuffixOf, nub,
                         replace, sort, sortOn, stripInfix, trim)
 import Data.Maybe (mapMaybe)
-import SimpleCmd (error', warning)
+import SimpleCmd (error')
 import System.FilePath.Glob (compile, match)
 
 type RepoState = (String,(Bool,FilePath))
@@ -65,29 +67,37 @@ data ChangeEnable = Disable String Bool
                   | BaseURL String
   deriving (Eq,Ord,Show)
 
-printAction :: Bool -> ChangeEnable -> IO ()
+printAction :: Bool -> ChangeEnable -> Maybe (Either String String)
 printAction save (Disable r s) =
   if s
   then
+    Just $ Right $
     if save
-    then putStrLn $ "disable " ++ quote r
-    else warning $ "with " ++ quote r ++ " disabled"
-  else warning $ quote r ++ " already disabled"
+    then "disable " ++ quote r
+    else "with " ++ quote r ++ " disabled"
+  else Just $ Left $ quote r ++ " already disabled"
 printAction save (Enable r s) =
   if s
   then
+    Just . Right $
     if save
-    then putStrLn $ "enable " ++ quote r
-    else warning $ "with " ++ quote r ++ " enabled"
-  else warning $ quote r ++ " already enabled"
-printAction _ (Expire _) = return ()
+    then "enable " ++ quote r
+    else "with " ++ quote r ++ " enabled"
+  else Just $ Left $ quote r ++ " already enabled"
+printAction _ (Expire _) = Nothing
 printAction _ UnExpire =
-  putStrLn "unexpire:"
+  Just $ Right "unexpire:"
 printAction _ (Delete f s) =
   if s
-  then putStrLn $ "delete " ++ quote f
-  else warning $ quote f ++ " deletion skipped"
-printAction _ (BaseURL _) = return ()
+  then Just $ Right $ "delete " ++ quote f
+  else Just $ Left $ quote f ++ " deletion skipped"
+printAction _ (BaseURL _) = Nothing
+
+reduceOutput :: [Either String String] -> [String]
+reduceOutput os =
+  case partitionEithers os of
+    (is,[]) -> is
+    (_,cs) -> cs
 
 quote :: String -> String
 quote s = '\'' : s ++ "'"

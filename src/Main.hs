@@ -7,6 +7,7 @@ module Main (main) where
 import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.List.Extra
+import Data.Maybe (mapMaybe)
 import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
@@ -88,7 +89,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
     let actions = selectRepo exact nameStates modes
         moreoutput = not (null args) || null actions || listrepos
     unless (null actions || quiet) $ do
-      mapM_ (printAction save) actions
+      mapM_ putStrLn $ reduceOutput $ mapMaybe (printAction save) actions
       when moreoutput $
         warning ""
     outputs <-
