@@ -106,20 +106,23 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         _ -> return False
     when (or outputs && (save || moreoutput) && not quiet) $
       warning ""
-    when save $ do
+    when save $
       if null actions
         then putStrLn "no changes to save"
         else do
-        prompt_ "Press Enter to save repo enabled state"
-        doSudo dryrun debug "dnf" $
-          "config-manager" : concatMap saveRepo actions
-      putStrLn ""
+        let changes = concatMap saveRepo actions
+        unless (null changes) $ do
+          ok <- yesno $ "Save changed repo" ++ " enabled state" ++ ['s' | length changes > 1]
+          when ok $
+            doSudo dryrun debug "dnf" $ "config-manager" : changes
     if null args
       then
-      when (null actions || listrepos) $
+      when (null actions || listrepos) $ do
+      when save $ putStrLn ""
       listRepos $ map (updateState actions) nameStates
       else do
       sleep 1
+      when save $ putStrLn ""
       let repoargs = concatMap changeRepo actions
           weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
           quietopt = if quiet then ("-q" :) else id
