@@ -5,6 +5,7 @@ module ExpireRepos (
 
 import Control.Monad
 import Data.List (nub)
+import SimpleCmd (error')
 
 import Sudo
 
@@ -36,7 +37,7 @@ clearExpired :: Bool -> Bool -> IO ()
 clearExpired dryrun debug = do
   old <- read <$> readFile expiredFile :: IO [String]
   if null old
-    then return ()
+    then error' "no expired repos"
     else do
     mapM_ putStrLn old
     putStrLn ""
