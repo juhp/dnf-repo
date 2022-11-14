@@ -18,7 +18,7 @@ where
 import Data.Either (partitionEithers)
 import Data.List.Extra (dropPrefix, dropSuffix,
                         isPrefixOf, isInfixOf, isSuffixOf, nub,
-                        replace, sort, sortOn, stripInfix, trim)
+                        replace, sortOn, stripInfix, trim)
 import Data.Maybe (mapMaybe)
 import SimpleCmd (error')
 import System.FilePath.Glob (compile, match)
@@ -146,7 +146,7 @@ updateState (ce:ces) re@(repo,(enabled,file)) =
 
 selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
 selectRepo exact repostates modes =
-  nub $ foldr selectRepo' [] (nub (sort modes))
+  nub $ foldr selectRepo' [] (nub modes)
   where
     selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
     selectRepo' mode acc =
