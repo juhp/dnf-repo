@@ -1,5 +1,12 @@
 # dnf-repo releases
 
+## 0.5.2 (2022-11-28)
+- --releasever now induces using a separate dnf cache subdir
+- YumRepoFile: do not sort modes
+- silence "already enabled/disabled" warnings when there are actions
+- improve --save: use yesno prompt and only act if changes
+- --clear-expires: error if no repos set to expire
+
 ## 0.5.1 (2022-11-08)
 - check if new copr or koji repo exists with http-directory
 - remove initial/trailing / or : from reponames

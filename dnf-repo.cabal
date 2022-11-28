@@ -1,5 +1,5 @@
 name:                dnf-repo
-version:             0.5.1
+version:             0.5.2
 synopsis:            DNF wrapper tool to control repos
 description:
         A command-line wrapper of the dnf package manager to
@@ -20,7 +20,7 @@ tested-with:         GHC == 8.6.5
                      ||  == 8.8.4
                      ||  == 8.10.7
                      ||  == 9.0.2
-                     ||  == 9.2.4
+                     ||  == 9.2.5
 data-dir:            data
 data-files:          copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo
                      koji-REPO.repo
