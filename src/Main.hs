@@ -16,6 +16,7 @@ import System.Directory
 import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 import System.IO.Extra (withTempDir)
+import System.Posix.User (getEffectiveUserName,getLoginName)
 import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
@@ -25,6 +26,7 @@ import YumRepoFile
 
 main :: IO ()
 main = do
+  checkEuid
   simpleCmdArgs' (Just version)
     "DNF wrapper repo tool"
     "see https://github.com/juhp/dnf-repo#readme" $
@@ -218,3 +220,10 @@ maybeReleaseVer args =
             in if all isDigit relver || relver `elem` ["rawhide","eln"]
                then Just relver
                else error' $ "unknown releasever:" +-+ relver
+
+checkEuid :: IO ()
+checkEuid = do
+  user <- getLoginName
+  euser <- getEffectiveUserName
+  when (user /= euser) $
+    warning "*Recommended not to run dnf-repo as root*"

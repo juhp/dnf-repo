@@ -6,6 +6,7 @@
 - silence "already enabled/disabled" warnings when there are actions
 - improve --save: use yesno prompt and only act if changes
 - --clear-expires: error if no repos set to expire
+- warning when run as sudo
 
 ## 0.5.1 (2022-11-08)
 - check if new copr or koji repo exists with http-directory
