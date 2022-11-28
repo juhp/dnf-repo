@@ -74,7 +74,7 @@ printAction save (Disable r s) =
     Just $ Right $
     if save
     then "disable " ++ quote r
-    else "with " ++ quote r ++ " disabled"
+    else "with disabled " ++ quote r
   else Just $ Left $ quote r ++ " already disabled"
 printAction save (Enable r s) =
   if s
@@ -82,7 +82,7 @@ printAction save (Enable r s) =
     Just . Right $
     if save
     then "enable " ++ quote r
-    else "with " ++ quote r ++ " enabled"
+    else "with enabled " ++ quote r
   else Just $ Left $ quote r ++ " already enabled"
 printAction _ (Expire _) = Nothing
 printAction _ UnExpire =
