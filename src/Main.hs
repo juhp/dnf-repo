@@ -6,6 +6,7 @@ module Main (main) where
 
 import Control.Monad.Extra
 import Data.Bifunctor (bimap)
+import Data.Char (isDigit)
 import Data.List.Extra
 import Data.Maybe (mapMaybe)
 import Network.HTTP.Directory (httpExists', (+/+))
@@ -127,7 +128,8 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
       let repoargs = concatMap changeRepo actions
           weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
           quietopt = if quiet then ("-q" :) else id
-        in doSudo dryrun debug "dnf" $ quietopt repoargs ++ weakdeps ++ args
+          cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | Just relver <- [maybeReleaseVer args]]
+        in doSudo dryrun debug "dnf" $ quietopt repoargs ++ cachedir ++ weakdeps ++ args
 
 -- FIXME pull non-fedora copr repo file
 addCoprRepo :: Bool -> Bool -> String -> IO ()
@@ -196,3 +198,23 @@ filesWithExtension :: FilePath -> String -> IO [FilePath]
 filesWithExtension dir ext =
   filter (ext `isExtensionOf`) <$> listDirectory dir
 #endif
+
+maybeReleaseVer :: [String] -> Maybe String
+maybeReleaseVer args =
+  let releaseverOpt = "--releasever"
+  in
+    case findIndices (releaseverOpt `isPrefixOf`) args of
+      [] -> Nothing
+      is -> let lst = last is
+                opt = args !! lst
+                relver =
+                  case dropPrefix releaseverOpt opt of
+                    "" ->
+                      if lst == length args
+                      then error' $ releaseverOpt +-+ "without version"
+                      else args !! (lst + 1)
+                    '=':rv -> rv
+                    _ -> error' $ "could not parse" +-+ opt
+            in if all isDigit relver || relver `elem` ["rawhide","eln"]
+               then Just relver
+               else error' $ "unknown releasever:" +-+ relver
