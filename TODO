@@ -1,4 +1,5 @@
 - support no dnf (ie rpm-ostree): don't use config-manager
 - cache copr history etc
-- support arbitrary copr (url?)
+- support arbitrary copr or .repo url
 - delete non-existent repos
+- --only repo

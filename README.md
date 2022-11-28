@@ -22,7 +22,7 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.5.1
+0.5.2
 $ dnf-repo --help
 DNF wrapper repo tool
 
@@ -66,7 +66,7 @@ Available options:
   -c,--add-copr COPR       Create repo file for copr repo
   -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
                            epel9-build, etc)
-  -u,--repourl URL         temporary repo from a baseurl
+  -u,--repourl URL         Use temporary repo from a baseurl
 ```
 
 ## Usage examples
@@ -114,18 +114,18 @@ $ dnf-repo --M -d h264 --save
 ### Use only source repos
 ```shellsession
 $ dnf-repo -d \* --enable-source
-with 'fedora-source' enabled
-with 'updates-source' enabled
-with 'fedora' disabled
-with 'updates' disabled
+with enabled 'fedora-source'
+with enabled 'updates-source'
+with disabled 'fedora'
+with disabled 'updates'
 ```
 
 ### Switch system from rawhide
 Switch a system from Rawhide to F37:
 ```shellsession
 $ dnf-repo -d rawhide -e fedora distrosync --releasever 37 fedora-\*
-with 'rawhide' disabled
-with 'fedora' enabled
+with disabled 'rawhide'
+with enabled 'fedora'
 
 :
 ```
