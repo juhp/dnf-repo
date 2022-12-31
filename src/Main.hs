@@ -225,7 +225,9 @@ maybeReleaseVer args =
                else error' $ "unknown releasever:" +-+ relver
 
 checkEuid :: IO ()
-checkEuid = do
+checkEuid =
+  -- getLoginName fails for proot
+  unlessM (cmdBool "pgrep" ["--session", "0", "proot"]) $ do
   user <- getLoginName
   euser <- getEffectiveUserName
   when (user /= euser) $
