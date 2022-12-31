@@ -1,5 +1,5 @@
 name:                dnf-repo
-version:             0.5.2
+version:             0.5.3
 synopsis:            DNF wrapper tool to control repos
 description:
         A command-line wrapper of the dnf package manager to

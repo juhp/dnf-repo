@@ -22,7 +22,7 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.5.2
+0.5.3
 $ dnf-repo --help
 DNF wrapper repo tool
 

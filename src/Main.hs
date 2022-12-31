@@ -220,6 +220,7 @@ maybeReleaseVer args =
                       else args !! (lst + 1)
                     '=':rv -> rv
                     _ -> error' $ "could not parse" +-+ opt
+                  -- still not sure if this fully makes sense
             in if all isDigit relver || relver `elem` ["rawhide","eln"]
                then Just relver
                else error' $ "unknown releasever:" +-+ relver

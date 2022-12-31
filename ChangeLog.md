@@ -1,5 +1,10 @@
 # dnf-repo releases
 
+## 0.5.3 (2022-12-31)
+- for copr template file, detect fedora distro otherwise assume epel
+- don't print actions if no args
+- skip euid check if proot session
+
 ## 0.5.2 (2022-11-28)
 - --releasever now induces using a separate dnf cache subdir
 - YumRepoFile: do not sort modes
