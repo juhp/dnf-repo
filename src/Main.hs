@@ -141,8 +141,11 @@ addCoprRepo dryrun debug repo = do
     Just (copr_owner,copr_repo) -> do
       let repourl = "https://download.copr.fedorainfracloud.org/results" +/+ copr_owner +/+ copr_repo
       unlessM (httpExists' repourl) $ error' $ "no such copr repo: " ++ repourl
+      distro <- do
+        isFedora <- grep_ "ID=fedora" "/etc/os-release"
+        return $ if isFedora then "fedora" else "epel" -- FIXME!
       template <- getDataFileName coprRepoTemplate
-      repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", template]
+      repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", "-e", "s/@DISTRO@/" ++ distro ++ "/", template]
       let repofile = ("_copr:" ++) $
                      replace "COLON" ":" $
                      replace "OWNER" copr_owner $

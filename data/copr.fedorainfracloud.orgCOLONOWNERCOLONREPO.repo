@@ -1,6 +1,6 @@
 [copr:copr.fedorainfracloud.org:@COPR_OWNER@:@COPR_REPO@]
 name=Copr repo for @COPR_REPO@ owned by @COPR_OWNER@
-baseurl=https://download.copr.fedorainfracloud.org/results/@COPR_OWNER@/@COPR_REPO@/fedora-$releasever-$basearch/
+baseurl=https://download.copr.fedorainfracloud.org/results/@COPR_OWNER@/@COPR_REPO@/@DISTRO@-$releasever-$basearch/
 type=rpm-md
 skip_if_unavailable=True
 gpgcheck=1
