@@ -8,7 +8,7 @@ import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.Char (isDigit)
 import Data.List.Extra
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, maybeToList)
 import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
@@ -130,7 +130,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
       let repoargs = concatMap changeRepo actions
           weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
           quietopt = if quiet then ("-q" :) else id
-          cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | Just relver <- [maybeReleaseVer args]]
+          cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
         in doSudo dryrun debug "dnf" $ quietopt repoargs ++ cachedir ++ weakdeps ++ args
 
 -- FIXME pull non-fedora copr repo file
