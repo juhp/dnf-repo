@@ -91,7 +91,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
     nameStates <- sort <$> concatMapM readRepos repofiles
     let actions = selectRepo exact nameStates modes
         moreoutput = not (null args) || null actions || listrepos
-    unless (null actions || null args || quiet) $ do
+    unless (null actions || quiet) $ do
       mapM_ putStrLn $ reduceOutput $ mapMaybe (printAction save) actions
       when moreoutput $
         warning ""
