@@ -16,7 +16,7 @@ import System.Directory
 import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 import System.IO.Extra (withTempDir)
-import System.Posix.User (getEffectiveUserName,getLoginName)
+import System.Posix.User (getEffectiveUserID)
 import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
@@ -226,10 +226,8 @@ maybeReleaseVer args =
                else error' $ "unknown releasever:" +-+ relver
 
 checkEuid :: IO ()
-checkEuid =
-  -- getLoginName fails for proot
-  unlessM (cmdBool "pgrep" ["--session", "0", "proot"]) $ do
-  user <- getLoginName
-  euser <- getEffectiveUserName
-  when (user /= euser) $
-    warning "*Recommended not to run dnf-repo as root*"
+checkEuid = do
+  -- use uid for termux fedora instead of username
+  euid <- getEffectiveUserID
+  when (euid == 0) $
+    warning "*Better not to run dnf-repo as root*"
