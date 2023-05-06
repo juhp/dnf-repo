@@ -14,10 +14,10 @@ import SimpleCmd
 import SimpleCmdArgs
 import SimplePrompt (yesno)
 import System.Directory
+import System.Environment (lookupEnv)
 import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 import System.IO.Extra (withTempDir)
-import System.Posix.User (getEffectiveUserID)
 import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
@@ -27,7 +27,7 @@ import YumRepoFile
 
 main :: IO ()
 main = do
-  checkEuid
+  checkSudo
   simpleCmdArgs' (Just version)
     "DNF wrapper repo tool"
     "see https://github.com/juhp/dnf-repo#readme" $
@@ -226,9 +226,9 @@ maybeReleaseVer args =
                then Just relver
                else error' $ "unknown releasever:" +-+ relver
 
-checkEuid :: IO ()
-checkEuid = do
-  -- use uid for termux fedora instead of username
-  euid <- getEffectiveUserID
-  when (euid == 0) $
-    warning "*Better not to run dnf-repo as root*"
+checkSudo :: IO ()
+checkSudo = do
+  -- previously checked for euid (no username for termux-fedora)
+  issudo <- isJust <$> lookupEnv "SUDO_USER"
+  when issudo $
+    warning "*No need to run dnf-repo directly with sudo*"
