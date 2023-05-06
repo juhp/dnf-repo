@@ -3,7 +3,7 @@
 A wrapper of the dnf package manager for fine control of
 enabled/disabled yum repos (eg Copr repos).
 
-dnf is the package manager used by Fedora Linux and also modern RHEL.
+dnf is the package manager used by Fedora Linux and also from RHEL 8 on.
 
 DNF is a bit slow at handling multiple repos because it attempts
 to refresh the cached repodata frequently. So it can be advantageous
@@ -22,7 +22,7 @@ and also to create a repo file for a Copr or Koji repo.
 
 ```shellsession
 $ dnf-repo --version
-0.5.3
+0.5.4
 $ dnf-repo --help
 DNF wrapper repo tool
 
@@ -36,6 +36,7 @@ Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
                   --disable-debuginfo | --enable-source | --disable-source |
                   (-c|--add-copr COPR) | (-k|--add-koji REPO) |
                   (-u|--repourl URL)] [DNFARGS]
+
   see https://github.com/juhp/dnf-repo#readme
 
 Available options:

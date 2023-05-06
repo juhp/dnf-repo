@@ -1,5 +1,10 @@
 # dnf-repo releases
 
+## 0.5.4 (2023-05-06)
+- Revert "don't printAction's if no args"
+- use simple-prompt
+- just check for SUDO_USER instead of euid
+
 ## 0.5.3 (2022-12-31)
 - for copr template file, detect fedora distro otherwise assume epel
 - don't print actions if no args
