@@ -8,7 +8,7 @@ import Control.Monad.Extra
 import Data.Bifunctor (bimap)
 import Data.Char (isDigit)
 import Data.List.Extra
-import Data.Maybe (mapMaybe, maybeToList)
+import Data.Maybe (isJust, mapMaybe, maybeToList)
 import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
