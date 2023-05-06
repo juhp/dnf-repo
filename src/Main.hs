@@ -12,6 +12,7 @@ import Data.Maybe (mapMaybe, maybeToList)
 import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
+import SimplePrompt (yesno)
 import System.Directory
 import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
@@ -116,7 +117,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         else do
         let changes = concatMap saveRepo actions
         unless (null changes) $ do
-          ok <- yesno $ "Save changed repo" ++ " enabled state" ++ ['s' | length changes > 1]
+          ok <- yesno Nothing $ "Save changed repo" ++ " enabled state" ++ ['s' | length changes > 1]
           when ok $
             doSudo dryrun debug "dnf" $ "config-manager" : changes
     if null args
@@ -194,7 +195,7 @@ deleteRepo dryrun debug repofile = do
   case mowned of
     Just owner -> warning $ repofile +-+ "owned by" +-+ owner
     Nothing -> do
-      ok <- yesno $ "Remove " ++ takeFileName repofile
+      ok <- yesno Nothing $ "Remove " ++ takeFileName repofile
       when ok $ do
         doSudo dryrun debug "rm" [repofile]
 

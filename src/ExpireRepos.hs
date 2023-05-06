@@ -6,6 +6,7 @@ module ExpireRepos (
 import Control.Monad
 import Data.List (nub)
 import SimpleCmd (error')
+import SimplePrompt (yesno)
 
 import Sudo
 
@@ -16,7 +17,7 @@ expireRepo :: Bool -> Bool -> String -> IO ()
 expireRepo dryrun debug repo = do
   old <- read <$> readFile expiredFile :: IO [String]
   let expired = nub $ old ++ [repo]
-  ok <- yesno $ "Mark '" ++ repo ++ "' cache expired"
+  ok <- yesno Nothing $ "Mark '" ++ repo ++ "' cache expired"
   when ok $ do
     doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow expired ++ "/",
@@ -41,7 +42,7 @@ clearExpired dryrun debug = do
     else do
     mapM_ putStrLn old
     putStrLn ""
-    ok <- yesno "Unset cache expirations"
+    ok <- yesno Nothing "Unset cache expirations"
     when ok $ do
       doSudo dryrun debug "sed" ["-i", "-e",
                                "s/" ++ renderShow old ++ "/" ++ renderShow [] ++ "/",
