@@ -13,7 +13,11 @@ import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
 import SimplePrompt (yesNo)
-import System.Directory
+import System.Directory (doesFileExist, findExecutable, withCurrentDirectory,
+#if !MIN_VERSION_simple_cmd(0,2,4)
+                         listDirectory
+#endif
+                        )
 import System.Environment (lookupEnv)
 import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
@@ -118,8 +122,13 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         let changes = concatMap saveRepo actions
         unless (null changes) $ do
           ok <- yesNo $ "Save changed repo" ++ " enabled state" ++ ['s' | length changes > 1]
-          when ok $
-            doSudo dryrun debug "dnf" $ "config-manager" : changes
+          when ok $ do
+            mdnf3 <- findExecutable "dnf-3"
+            case mdnf3 of
+              -- FIXME cannot combine --disable and --enable
+              Just dnf3 -> doSudo dryrun debug dnf3 $ "config-manager" : changes
+              -- FIXME need to have repo files in changes
+              Nothing -> doSudo dryrun debug "sed" $ "config-manager" : changes
     if null args
       then
       when (null actions || listrepos) $ do
@@ -128,11 +137,17 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
       else do
       sleep 1
       when save $ putStrLn ""
-      let repoargs = concatMap changeRepo actions
-          weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
-          quietopt = if quiet then ("-q" :) else id
-          cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
-        in doSudo dryrun debug "dnf" $ quietopt repoargs ++ cachedir ++ weakdeps ++ args
+      mdnf <- findExecutable "dnf"
+      case mdnf of
+        Just dnf -> do
+          when debug $ putStrLn dnf
+          let repoargs = concatMap changeRepo actions
+              weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
+              quietopt = if quiet then ("-q" :) else id
+              cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
+            in doSudo dryrun debug dnf $ quietopt repoargs ++ cachedir ++ weakdeps ++ args
+        -- FIXME rpm-ostree install supports --enablerepo
+        Nothing -> error' "rpm-ostree not supported"
 
 -- FIXME pull non-fedora copr repo file
 addCoprRepo :: Bool -> Bool -> String -> IO ()
