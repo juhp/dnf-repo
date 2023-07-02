@@ -3,16 +3,16 @@
 A wrapper of the dnf package manager for fine control of
 enabled/disabled yum repos (eg Copr repos).
 
-dnf is the package manager used by Fedora Linux and also from RHEL 8 on.
+dnf is the package manager used by Fedora Linux, Centos Stream, and RHEL.
 
-DNF is a bit slow at handling multiple repos because it attempts
-to refresh the cached repodata frequently. So it can be advantageous
-to disable smaller repos by default and only enable them as needed
-periodically.
+DNF can get slower with many repos enabled because it attempts
+to refresh its cached repodata frequently. So it can be advantageous
+to disable some small repos by default and only enable them periodically
+as needed.
 
 This tool can temporarily enable/disable repo(s) selected by substring(s).
 Changes to repos' enabled states can be saved too.
-It is also possible to expire repos' caches individually.
+It is also possible to expire repo caches individually.
 
 There are also smart options to enable/disable testing/modular repos
 (and even source/debuginfo repos),
@@ -65,7 +65,7 @@ Available options:
   --enable-source          Enable source repos
   --disable-source         Disable source repos
   -c,--add-copr COPR       Create repo file for copr repo
-  -k,--add-koji REPO       Create repo file for koji repo (f37-build, rawhide,
+  -k,--add-koji REPO       Create repo file for koji repo (f38-build, rawhide,
                            epel9-build, etc)
   -u,--repourl URL         Use temporary repo from a baseurl
 ```
@@ -122,9 +122,9 @@ with disabled 'updates'
 ```
 
 ### Switch system from rawhide
-Switch a system from Rawhide to F37:
+Switch a system from Rawhide to F38:
 ```shellsession
-$ dnf-repo -d rawhide -e fedora distrosync --releasever 37 fedora-\*
+$ dnf-repo -d rawhide -e fedora distrosync --releasever 38 fedora-\*
 with disabled 'rawhide'
 with enabled 'fedora'
 
