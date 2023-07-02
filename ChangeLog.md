@@ -1,5 +1,11 @@
 # dnf-repo releases
 
+## 0.5.5 (2023-07-02)
+- for dnf5 test for dnf-3 (for config-manager) and also dnf
+- YumRepoFile: fix parsing of "enable = 1" (for UBI)
+- sudo debug: print cmd
+- update simple-prompt to 0.2
+
 ## 0.5.4 (2023-05-06)
 - Revert "don't printAction's if no args"
 - use simple-prompt
