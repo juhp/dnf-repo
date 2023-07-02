@@ -18,7 +18,7 @@ where
 import Data.Either (partitionEithers)
 import Data.List.Extra (dropPrefix, dropSuffix,
                         isPrefixOf, isInfixOf, isSuffixOf, nub,
-                        replace, sortOn, stripInfix, trim)
+                        replace, sortOn, splitOn, stripInfix, trim)
 import Data.Maybe (mapMaybe)
 import SimpleCmd (error')
 import System.FilePath.Glob (compile, match)
@@ -260,12 +260,15 @@ parseRepos file ls =
     Nothing -> []
     Just (section,rest) ->
       let (enabled,more) =
-            case dropWhile (not . ("enabled=" `isPrefixOf`)) rest of
+            case dropWhile (not . ("enabled" `isPrefixOf`)) rest of
               [] -> error' $ "no enabled field for " ++ section
               (e:more') ->
-                case trim e of
-                  "enabled=1" -> (True,more')
-                  "enabled=0" -> (False,more')
+                case splitOn "=" e of
+                  [_,v] ->
+                    case trim v of
+                      "1" -> (True,more')
+                      "0" -> (False,more')
+                      _ -> error' $ "strange enabled state " ++ e ++ " for " ++ section
                   _ -> error' $ "unknown enabled state " ++ e ++ " for " ++ section
       in (section,(enabled,file)) : parseRepos file more
   where
