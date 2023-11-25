@@ -61,7 +61,7 @@ repoSubstr DisableSource = "-source"
 
 data ChangeEnable = Disable String Bool
                   | Enable String Bool
-                  | Expire String
+                  | Expire String Bool
                   | UnExpire
                   | Delete FilePath Bool
                   | BaseURL String
@@ -84,7 +84,12 @@ printAction save (Enable r s) =
     then "enable " ++ quote r
     else "with enabled " ++ quote r
   else Just $ Left $ quote r ++ " already enabled"
-printAction _ (Expire _) = Nothing
+printAction _ (Expire r s) =
+  if s
+  then
+    Just . Right $
+    "with enabled " ++ quote r
+  else Nothing
 printAction _ UnExpire =
   Just $ Right "unexpire:"
 printAction _ (Delete f s) =
@@ -105,7 +110,7 @@ quote s = '\'' : s ++ "'"
 maybeRepoName :: ChangeEnable -> Maybe (ChangeEnable, String)
 maybeRepoName d@(Disable r _) = Just (d, r)
 maybeRepoName e@(Enable r _) = Just (e, r)
-maybeRepoName x@(Expire r) = Just (x, r)
+maybeRepoName x@(Expire r _) = Just (x, r)
 maybeRepoName UnExpire = Nothing
 maybeRepoName (Delete _ _) = Nothing
 maybeRepoName (BaseURL _) = Nothing
@@ -113,6 +118,7 @@ maybeRepoName (BaseURL _) = Nothing
 changeRepo :: ChangeEnable -> [String]
 changeRepo (Disable r True) = ["--disablerepo", r]
 changeRepo (Enable r True) = ["--enablerepo", r]
+changeRepo (Expire r True) = ["--enablerepo", r]
 changeRepo (BaseURL url) = ["--repofrompath", repoUrlName ++ "," ++ url]
   where
     repoUrlName = replace "/" ":" $
@@ -128,7 +134,7 @@ saveRepo (Enable r True) = ["--enable", r]
 saveRepo _ = []
 
 expiring :: ChangeEnable -> Maybe String
-expiring (Expire r) = Just r
+expiring (Expire r _) = Just r
 expiring _ = Nothing
 
 deleting :: ChangeEnable -> Maybe String
@@ -188,7 +194,7 @@ selectRepo exact repostates modes =
         DisableRepo pat ->
           maybeChange pat matchesRepo enabled (Disable name)
         ExpireRepo pat ->
-          maybeChange pat matchesRepo True (const (Expire name))
+          maybeChange pat matchesRepo True (Expire name)
         ClearExpires -> Just UnExpire
         DeleteRepo pat ->
           maybeChange pat matchesRepo

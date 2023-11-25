@@ -103,7 +103,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
     outputs <-
       forM actions $
       \case
-        Expire repo -> do
+        Expire repo _ -> do
           expireRepo dryrun debug repo
           return True
         UnExpire -> do
