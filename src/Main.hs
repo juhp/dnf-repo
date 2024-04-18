@@ -141,7 +141,11 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
       else do
       sleep 1
       when save $ putStrLn ""
-      mdnf <- findExecutable "dnf"
+      mdnf <- do
+        mdnf5 <- findExecutable "dnf5"
+        case mdnf5 of
+          Just dnf5 -> return $ Just dnf5
+          Nothing -> findExecutable "dnf"
       case mdnf of
         Just dnf -> do
           when debug $ putStrLn dnf
