@@ -1,5 +1,12 @@
 # dnf-repo releases
 
+## 0.5.6 (2024-04-18)
+- --add-copr now supports non-fedora copr's and downloads .repo with curl
+- with --add-copr can override --osname OS and --releasever VERSION
+- use dnf5 if available
+- --expire now enables the repo for the invocation
+- --add-koji now uses rpm system arch
+
 ## 0.5.5 (2023-07-02)
 - for dnf5 test for dnf-3 (for config-manager) and also dnf
 - YumRepoFile: fix parsing of "enable = 1" (for UBI)

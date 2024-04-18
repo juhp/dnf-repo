@@ -15,15 +15,16 @@ Changes to repos' enabled states can be saved too.
 It is also possible to expire repo caches individually.
 
 There are also smart options to enable/disable testing/modular repos
-(and even source/debuginfo repos),
-and also to create a repo file for a Copr or Koji repo.
+(and even source/debuginfo repos), and also to a Copr repo or Koji repo file.
 
 ## Help
 
-```shellsession
-$ dnf-repo --version
-0.5.5
-$ dnf-repo --help
+`$ dnf-repo --version`
+```
+0.5.6
+```
+`$ dnf-repo --help`
+```
 DNF wrapper repo tool
 
 Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
@@ -34,8 +35,9 @@ Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
                   (-T|--disable-testing) | (-m|--enable-modular) |
                   (-M|--disable-modular) | --enable-debuginfo |
                   --disable-debuginfo | --enable-source | --disable-source |
-                  (-c|--add-copr COPR) | (-k|--add-koji REPO) |
-                  (-u|--repourl URL)] [DNFARGS]
+                  (-c|--add-copr COPR) [--osname OSNAME]
+                  [--releasever RELEASEVER] |
+                  (-k|--add-koji REPO) | (-u|--repourl URL)] [DNFARGS]
 
   see https://github.com/juhp/dnf-repo#readme
 
@@ -65,7 +67,9 @@ Available options:
   --enable-source          Enable source repos
   --disable-source         Disable source repos
   -c,--add-copr COPR       Create repo file for copr repo
-  -k,--add-koji REPO       Create repo file for koji repo (f38-build, rawhide,
+  --osname OSNAME          Specify OS Name to override (eg epel)
+  --releasever RELEASEVER  Specify OS Release Version to override (eg rawhide)
+  -k,--add-koji REPO       Create repo file for koji repo (f40-build, rawhide,
                            epel9-build, etc)
   -u,--repourl URL         Use temporary repo from a baseurl
 ```
@@ -122,9 +126,9 @@ with disabled 'updates'
 ```
 
 ### Switch system from rawhide
-Switch a system from Rawhide to F38:
+Switch a system from Rawhide to F40:
 ```shellsession
-$ dnf-repo -d rawhide -e fedora distrosync --releasever 38 fedora-\*
+$ dnf-repo -d rawhide -e fedora distrosync --releasever 40 fedora-\*
 with disabled 'rawhide'
 with enabled 'fedora'
 

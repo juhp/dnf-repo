@@ -1,5 +1,5 @@
 name:                dnf-repo
-version:             0.5.5
+version:             0.5.6
 synopsis:            DNF wrapper tool to control repos
 description:
         A command-line wrapper of the dnf package manager to
@@ -8,7 +8,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Jens Petersen <juhpetersen@gmail.com>
 maintainer:          Jens Petersen <juhpetersen@gmail.com>
-copyright:           2022-2023  Jens Petersen <juhpetersen@gmail.com>
+copyright:           2022-2024  Jens Petersen <juhpetersen@gmail.com>
 category:            Utility
 homepage:            https://github.com/juhp/dnf-repo
 bug-reports:         https://github.com/juhp/dnf-repo/issues
