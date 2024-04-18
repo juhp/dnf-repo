@@ -9,6 +9,7 @@ import Data.Bifunctor (bimap)
 import Data.Char (isDigit)
 import Data.List.Extra
 import Data.Maybe (isJust, mapMaybe, maybeToList)
+import Network.Curl
 import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
@@ -51,7 +52,7 @@ main = do
       (fmap . fmap . fmap . fmap) cleanupReponame . strOptionWith
       where
         cleanupReponame =
-          dropWhileEnd (== ':') . replace "/" ":" . dropWhile (== '/')
+          dropWhileEnd (== '/') . dropWhile (== '/') . replace ":" "/"
 
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
@@ -67,12 +68,15 @@ main = do
       flagLongWith' (Specific DisableDebuginfo) "disable-debuginfo" "Disable debuginfo repos" <|>
       flagLongWith' (Specific EnableSource) "enable-source" "Enable source repos" <|>
       flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos" <|>
-      AddCopr <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo" <|>
+      AddCopr
+      <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo"
+      <*> optional (strOptionLongWith "osname" "OSNAME" "Specify OS Name to override (eg epel)")
+      <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
       AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f38-build, rawhide, epel9-build, etc)" <|>
       RepoURL <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
 
-coprRepoTemplate :: FilePath
-coprRepoTemplate = "copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo"
+fedoraCopr :: String
+fedoraCopr = "copr.fedorainfracloud.org"
 
 kojiRepoTemplate :: FilePath
 kojiRepoTemplate = "koji-REPO.repo"
@@ -88,7 +92,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
   withCurrentDirectory "/etc/yum.repos.d" $ do
     forM_ modes $
       \case
-        AddCopr copr -> addCoprRepo dryrun debug copr
+        AddCopr copr mosname mrelease -> addCoprRepo dryrun debug mosname mrelease copr
         AddKoji repo -> addKojiRepo dryrun debug repo
         _ -> return ()
     repofiles <- filesWithExtension "." "repo"
@@ -145,36 +149,53 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
               weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
               quietopt = if quiet then ("-q" :) else id
               cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
-            in doSudo dryrun debug dnf $ quietopt repoargs ++ cachedir ++ weakdeps ++ args
+            in doSudo dryrun debug dnf $ quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args
         -- FIXME rpm-ostree install supports --enablerepo
         Nothing -> error' "rpm-ostree not supported"
+  where
+    mungeArg :: String -> String
+    mungeArg "distrosync" = "distro-sync"
+    mungeArg arg = arg
 
--- FIXME pull non-fedora copr repo file
-addCoprRepo :: Bool -> Bool -> String -> IO ()
-addCoprRepo dryrun debug repo = do
-  case stripInfix ":" repo of
-    Nothing -> error' $ "invalid copr: " ++ repo
-    Just (copr_owner,copr_repo) -> do
-      let repourl = "https://download.copr.fedorainfracloud.org/results" +/+ copr_owner +/+ copr_repo
-      unlessM (httpExists' repourl) $ error' $ "no such copr repo: " ++ repourl
-      distro <- do
-        isFedora <- grep_ "ID=fedora" "/etc/os-release"
-        return $ if isFedora then "fedora" else "epel" -- FIXME!
-      template <- getDataFileName coprRepoTemplate
-      repodef <- cmd "sed" ["-e", "s/@COPR_OWNER@/" ++ copr_owner ++ "/g", "-e", "s/@COPR_REPO@/" ++ copr_repo ++ "/g", "-e", "s/@DISTRO@/" ++ distro ++ "/", template]
-      let repofile = ("_copr:" ++) $
-                     replace "COLON" ":" $
-                     replace "OWNER" copr_owner $
-                     replace "REPO" copr_repo coprRepoTemplate
-      exists <- doesFileExist repofile
-      if exists
-        then error' $ "repo already defined: " ++ repofile
-        else putStrLn $ "Setting up copr repo " ++ repo
-      withTempDir $ \ tmpdir -> do
-        let tmpfile = tmpdir </> repofile
-        unless dryrun $ writeFile tmpfile repodef
-        doSudo dryrun debug "cp" [tmpfile, repofile]
-        putStrLn ""
+addCoprRepo :: Bool -> Bool -> Maybe String -> Maybe String -> String -> IO ()
+addCoprRepo dryrun debug mosname mrelease repo = do
+  let (server,owner,project) =
+        case  splitOn "/" repo of
+          [] -> error' "empty repo string"
+          [_] -> error' $ "unqualified repo project:" +-+ repo
+          [o,p] -> (fedoraCopr, o , p)
+          [c,o,p] ->
+            if c == "redhat"
+            then ("copr.devel.redhat.com", o, p)
+            else
+              if '.' `elem` c
+              then (c, o, p)
+              else error' $ "unknown copr server:" +-+ repo
+          _ -> error' $ "unknown copr:" +-+ repo
+      repofile =
+        "_copr:" ++ server ++ ':' : mungeGroupFile owner ++ ':' : project <.> "repo"
+  whenM (doesFileExist repofile) $
+    error' $ "repo already defined: " ++ repofile
+  osName <- maybe getRpmOSName return mosname
+  osVersion <- maybe getRpmOsRelease return mrelease
+  let repofileUrl = "https://" ++ server +/+ "coprs" +/+ mungeGroupUrl owner +/+ project +/+ "repo" +/+ osName ++ '-' : osVersion +/+ mungeGroupFile owner ++ '-' : project <.> "repo"
+  (curlres,curlcontent) <- curlGetString repofileUrl []
+  unless (curlres == CurlOK) $
+    error' $ "downloading failed of" +-+ repofileUrl
+  putStrLn $ "Setting up copr repo " ++ repo
+  withTempDir $ \ tmpdir -> do
+    let tmpfile = tmpdir </> repofile
+    unless dryrun $ writeFile tmpfile $
+      maybe id (replace "$releasever") mrelease $
+      replace "enabled=1" "enabled=0" curlcontent
+    doSudo dryrun debug "cp" [tmpfile, repofile]
+    putStrLn ""
+  where
+    mungeGroupFile ('@':own) = "group_" ++ own
+    mungeGroupFile own = own
+
+    mungeGroupUrl ('@':own) = "g" +/+ own
+    mungeGroupUrl own = own
 
 addKojiRepo :: Bool -> Bool -> String -> IO ()
 addKojiRepo dryrun debug repo = do
@@ -247,3 +268,41 @@ checkSudo = do
   issudo <- isJust <$> lookupEnv "SUDO_USER"
   when issudo $
     warning "*No need to run dnf-repo directly with sudo*"
+
+getRpmOsRelease :: IO String
+getRpmOsRelease = do
+  -- not defined for fedora branches
+  let systemReleaseVer = "system-release(releasever)"
+  mReleaseVerPkg <- cmdMaybe "rpm" ["-q", "--whatprovides", systemReleaseVer]
+  case mReleaseVerPkg of
+    Just relverPkg -> do
+      mreleasever <- find (systemReleaseVer `isPrefixOf`) <$> cmdLines "rpm" ["-q", "--provides", relverPkg]
+      case mreleasever of
+        Just releasever -> return $ last (words releasever)
+        Nothing -> error' $ "failed to determine" +-+ systemReleaseVer
+    Nothing -> do
+      let systemRelease = "system-release"
+      msysreleasepkg <- cmdMaybe "rpm" ["-q", "--whatprovides", systemRelease]
+      case msysreleasepkg of
+        Just sysrelpkg -> do
+          let prefix = systemRelease ++ "("
+          msysrelease <- find (prefix `isPrefixOf`) <$> cmdLines "rpm" ["-q", "--provides", sysrelpkg]
+          case msysrelease of
+            Just sysrelease ->
+              -- "system-release(40)"
+              return $ init $ dropPrefix prefix sysrelease
+            Nothing -> error' $ "failed to determine" +-+ systemRelease
+        Nothing -> error' "failed to determine OS version"
+
+getRpmOSName :: IO String
+getRpmOSName = do
+  let osrelease = "/etc/os-release"
+      idkey = "ID="
+  osids <- grep ('^' : idkey) osrelease
+  case osids of
+    [] -> error' $ "failed to find ID in" +-+ osrelease
+    [osid] -> return $
+              dropSuffix "\"" $
+              dropPrefix "\"" $
+              dropPrefix idkey osid
+    oss -> error' $ "multiple IDs in" +-+ osrelease ++ ":" ++ unwords oss

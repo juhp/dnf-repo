@@ -23,8 +23,7 @@ tested-with:         GHC == 8.6.5
                      ||  == 9.2.7
                      ||  == 9.4.5
 data-dir:            data
-data-files:          copr.fedorainfracloud.orgCOLONOWNERCOLONREPO.repo
-                     koji-REPO.repo
+data-files:          koji-REPO.repo
 
 source-repository head
   type:                git
@@ -39,12 +38,13 @@ executable dnf-repo
   autogen-modules:     Paths_dnf_repo
   hs-source-dirs:      src
   build-depends:       base < 5,
+                       curl,
                        directory,
                        extra,
                        filepath,
                        Glob,
                        http-directory >= 0.1.9,
-                       simple-cmd,
+                       simple-cmd >= 0.2.2,
                        simple-cmd-args >= 0.1.8,
                        simple-prompt >= 0.2
   default-language:    Haskell2010

@@ -2,6 +2,6 @@
   - bonus: switch from updates-testing to updates
 - support no dnf (ie rpm-ostree): don't use config-manager
 - cache copr history etc
-- support arbitrary copr or .repo url
+- support adding arbitrary .repo url
 - delete non-existent repos
 - --only repo

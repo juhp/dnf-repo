@@ -25,7 +25,8 @@ import System.FilePath.Glob (compile, match)
 
 type RepoState = (String,(Bool,FilePath))
 
-data Mode = AddCopr String | AddKoji String | RepoURL String
+data Mode = AddCopr String (Maybe String) (Maybe String) | AddKoji String
+          | RepoURL String
           | EnableRepo String | DisableRepo String
           | ExpireRepo String | ClearExpires
           | DeleteRepo String
@@ -33,7 +34,7 @@ data Mode = AddCopr String | AddKoji String | RepoURL String
   deriving (Eq, Ord, Show)
 
 modePattern :: Mode -> Maybe String
-modePattern (AddCopr c) = Just c
+modePattern (AddCopr c _ _) = Just c
 modePattern (AddKoji k) = Just k
 modePattern (RepoURL _) = Nothing
 modePattern (EnableRepo r) = Just r
@@ -159,7 +160,7 @@ selectRepo exact repostates modes =
       let results = nub $ mapMaybe (selectRepoMode mode acc) repostates
       in
         case results of
-          [] -> error' ("no match for repo pattern action: " ++ show mode)
+          [] -> []
           [_] -> acc ++ results
           _ ->
             acc ++
@@ -184,7 +185,7 @@ selectRepo exact repostates modes =
                    -> Maybe ChangeEnable
     selectRepoMode mode acc (name,(enabled,file)) =
       case mode of
-        AddCopr repo ->
+        AddCopr repo _ _ ->
           maybeChange repo isSuffixOf (not enabled) (Enable name)
         AddKoji repo ->
           maybeChange repo isSuffixOf (not enabled) (Enable name)
