@@ -27,6 +27,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.ghc }}-
             ${{ runner.os }}-
+      - run: sudo apt-get -y install libcurl4-openssl-dev
       - run: cabal update
       - run: cabal build
       - run: cabal sdist
