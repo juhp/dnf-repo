@@ -72,7 +72,7 @@ main = do
       <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo"
       <*> optional (strOptionLongWith "osname" "OSNAME" "Specify OS Name to override (eg epel)")
       <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
-      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f38-build, rawhide, epel9-build, etc)" <|>
+      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f40-build, rawhide, epel9-build, etc)" <|>
       RepoURL <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
 
 fedoraCopr :: String
@@ -204,6 +204,7 @@ addCoprRepo dryrun debug mosname mrelease repo = do
 addKojiRepo :: Bool -> Bool -> String -> IO ()
 addKojiRepo dryrun debug repo = do
   sysarch <- cmd "rpm" ["--eval", "%{_arch}"]
+  -- FIXME repo validation/sanity: not "-k list" or other dnf command
   let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "latest" +/+ sysarch ++ "/"
   unlessM (httpExists' repourl) $ error' $ "no such koji repo: " ++ repourl
   template <- getDataFileName kojiRepoTemplate
