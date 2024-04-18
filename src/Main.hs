@@ -203,7 +203,8 @@ addCoprRepo dryrun debug mosname mrelease repo = do
 
 addKojiRepo :: Bool -> Bool -> String -> IO ()
 addKojiRepo dryrun debug repo = do
-  let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "/latest/x86_64/"
+  sysarch <- cmd "rpm" ["--eval", "%{_arch}"]
+  let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "latest" +/+ sysarch ++ "/"
   unlessM (httpExists' repourl) $ error' $ "no such koji repo: " ++ repourl
   template <- getDataFileName kojiRepoTemplate
   repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
