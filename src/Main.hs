@@ -159,7 +159,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
       case mdnf of
         Just dnf -> do
           when debug $ putStrLn dnf
-          let repoargs = concatMap changeRepo actions
+          let repoargs = mapMaybe changeRepo actions
               weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
               quietopt = if quiet then ("-q" :) else id
               cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]

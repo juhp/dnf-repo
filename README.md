@@ -151,6 +151,10 @@ otherwise all matching repos will be considered.
 An initial `^` (final `$`) in a glob pattern prevents
 the automatic prepending (appending) of `*` before (after) the pattern.
 
+Repo actions expand to a sequence of `--enablerepo=`, `--disablerepo=`,
+`--repo=`, etc, so as usual later settings will overrule conflicting
+earlier settings.
+
 ## Installation
 A copr repo is available:
 <https://copr.fedorainfracloud.org/coprs/petersen/dnf-repo/>

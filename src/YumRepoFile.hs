@@ -121,18 +121,18 @@ maybeRepoName UnExpire = Nothing
 maybeRepoName (Delete _ _) = Nothing
 maybeRepoName (BaseURL _) = Nothing
 
-changeRepo :: ChangeEnable -> [String]
-changeRepo (Disable r True) = ["--disablerepo", r]
-changeRepo (Enable r True) = ["--enablerepo", r]
-changeRepo (Only r True) = ["--repo", r]
-changeRepo (Expire r True) = ["--enablerepo", r]
-changeRepo (BaseURL url) = ["--repofrompath", repoUrlName ++ "," ++ url]
+changeRepo :: ChangeEnable -> Maybe String
+changeRepo (Disable r True) = Just $ "--disablerepo=" ++ r
+changeRepo (Enable r True) = Just $ "--enablerepo=" ++ r
+changeRepo (Only r True) = Just $ "--repo=" ++ r
+changeRepo (Expire r True) = Just $ "--enablerepo=" ++ r
+changeRepo (BaseURL url) = Just $ "--repofrompath=" ++ repoUrlName ++ "," ++ url
   where
     repoUrlName = replace "/" ":" $
                   dropSuffix "/" $
                   dropPrefix "http://" $
                   dropPrefix "https://" url
-changeRepo _ = []
+changeRepo _ = Nothing
 
 saveRepo :: ChangeEnable -> [String]
 saveRepo (Disable r True) = ["--disable", r]
