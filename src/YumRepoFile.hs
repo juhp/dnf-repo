@@ -27,7 +27,7 @@ type RepoState = (String,(Bool,FilePath))
 
 data Mode = AddCopr String (Maybe String) (Maybe String) | AddKoji String
           | RepoURL String
-          | EnableRepo String | DisableRepo String
+          | EnableRepo String | DisableRepo String | OnlyRepo String
           | ExpireRepo String | ClearExpires
           | DeleteRepo String
           | Specific SpecificChange
@@ -39,6 +39,7 @@ modePattern (AddKoji k) = Just k
 modePattern (RepoURL _) = Nothing
 modePattern (EnableRepo r) = Just r
 modePattern (DisableRepo r) = Just r
+modePattern (OnlyRepo r) = Just r
 modePattern (ExpireRepo r) = Just r
 modePattern ClearExpires = Nothing
 modePattern (DeleteRepo r) = Just r
@@ -62,6 +63,7 @@ repoSubstr DisableSource = "-source"
 
 data ChangeEnable = Disable String Bool
                   | Enable String Bool
+                  | Only String Bool
                   | Expire String Bool
                   | UnExpire
                   | Delete FilePath Bool
@@ -85,6 +87,8 @@ printAction save (Enable r s) =
     then "enable " ++ quote r
     else "with enabled " ++ quote r
   else Just $ Left $ quote r ++ " already enabled"
+printAction _ (Only r _) =
+  Just . Right $ "with only " ++ quote r
 printAction _ (Expire r s) =
   if s
   then
@@ -111,6 +115,7 @@ quote s = '\'' : s ++ "'"
 maybeRepoName :: ChangeEnable -> Maybe (ChangeEnable, String)
 maybeRepoName d@(Disable r _) = Just (d, r)
 maybeRepoName e@(Enable r _) = Just (e, r)
+maybeRepoName o@(Only r _) = Just (o, r)
 maybeRepoName x@(Expire r _) = Just (x, r)
 maybeRepoName UnExpire = Nothing
 maybeRepoName (Delete _ _) = Nothing
@@ -119,6 +124,7 @@ maybeRepoName (BaseURL _) = Nothing
 changeRepo :: ChangeEnable -> [String]
 changeRepo (Disable r True) = ["--disablerepo", r]
 changeRepo (Enable r True) = ["--enablerepo", r]
+changeRepo (Only r True) = ["--repo", r]
 changeRepo (Expire r True) = ["--enablerepo", r]
 changeRepo (BaseURL url) = ["--repofrompath", repoUrlName ++ "," ++ url]
   where
@@ -126,7 +132,6 @@ changeRepo (BaseURL url) = ["--repofrompath", repoUrlName ++ "," ++ url]
                   dropSuffix "/" $
                   dropPrefix "http://" $
                   dropPrefix "https://" url
-
 changeRepo _ = []
 
 saveRepo :: ChangeEnable -> [String]
@@ -194,6 +199,8 @@ selectRepo exact repostates modes =
           maybeChange pat matchesRepo (not enabled) (Enable name)
         DisableRepo pat ->
           maybeChange pat matchesRepo enabled (Disable name)
+        OnlyRepo pat ->
+          maybeChange pat matchesRepo (not enabled) (Only name)
         ExpireRepo pat ->
           maybeChange pat matchesRepo True (Expire name)
         ClearExpires -> Just UnExpire

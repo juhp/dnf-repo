@@ -4,4 +4,3 @@
 - cache copr history etc
 - support adding arbitrary .repo url
 - delete non-existent repos
-- --only repo

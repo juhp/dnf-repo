@@ -57,6 +57,7 @@ main = do
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> repoOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
+      OnlyRepo <$> repoOptionWith 'o' "only" "REPOPAT" "Only use matching repos" <|>
       ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
       flagWith' ClearExpires 'X' "clear-expires" "Undo cache expirations" <|>
       DeleteRepo <$> repoOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
@@ -100,6 +101,8 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
     nameStates <- sort <$> concatMapM readRepos repofiles
     let actions = selectRepo exact nameStates modes
         moreoutput = not (null args) || null actions || listrepos
+    when debug $
+      print actions
     unless (null actions || quiet) $ do
       mapM_ putStrLn $ reduceOutput $ mapMaybe (printAction save) actions
       when moreoutput $
