@@ -28,6 +28,7 @@ import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
 import ExpireRepos
+import State
 import Sudo
 import YumRepoFile
 

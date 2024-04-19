@@ -33,6 +33,7 @@ executable dnf-repo
   main-is:             Main.hs
   other-modules:       Paths_dnf_repo
                        ExpireRepos
+                       State
                        Sudo
                        YumRepoFile
   autogen-modules:     Paths_dnf_repo
