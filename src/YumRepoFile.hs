@@ -16,7 +16,7 @@ module YumRepoFile (
 where
 
 import Data.Either (partitionEithers)
-import Data.List.Extra (dropPrefix, dropSuffix,
+import Data.List.Extra (dropPrefix, dropSuffix, foldl',
                         isPrefixOf, isInfixOf, isSuffixOf, nub,
                         replace, sortOn, splitOn, stripInfix, trim)
 import Data.Maybe (mapMaybe)
@@ -158,10 +158,10 @@ updateState (ce:ces) re@(repo,(enabled,file)) =
 
 selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
 selectRepo exact repostates modes =
-  nub $ foldr selectRepo' [] (nub modes)
+  nub $ foldl' selectRepo' [] (nub modes)
   where
-    selectRepo' :: Mode -> [ChangeEnable] -> [ChangeEnable]
-    selectRepo' mode acc =
+    selectRepo' :: [ChangeEnable] -> Mode -> [ChangeEnable]
+    selectRepo' acc mode =
       let results = nub $ mapMaybe (selectRepoMode mode acc) repostates
       in
         case results of

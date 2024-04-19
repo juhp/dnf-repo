@@ -103,7 +103,8 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         AddKoji repo -> addKojiRepo dryrun debug repo
         _ -> return ()
     repofiles <- filesWithExtension "./" "repo"
-    -- when debug $ print repofiles
+    when debug $
+      print modes
     nameStates <- sort <$> concatMapM readRepos repofiles
     let actions = selectRepo exact nameStates modes
         moreoutput = not (null args) || null actions || listrepos
