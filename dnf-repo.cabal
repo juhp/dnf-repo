@@ -1,11 +1,11 @@
 name:                dnf-repo
-version:             0.5.6
+version:             0.6
 synopsis:            DNF wrapper tool to control repos
 description:
         A command-line wrapper of the dnf package manager to
         control the repos enabled for a dnf invocation.
-license:             BSD3
-license-file:        LICENSE
+license:             GPL-3
+license-file:        COPYING
 author:              Jens Petersen <juhpetersen@gmail.com>
 maintainer:          Jens Petersen <juhpetersen@gmail.com>
 copyright:           2022-2024  Jens Petersen <juhpetersen@gmail.com>

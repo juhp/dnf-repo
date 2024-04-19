@@ -163,7 +163,7 @@ A copr repo is available:
 Use {cabal,stack,cabal-rpm} install.
 
 ## Contributing
-dnf-repo is currently distributed under a BSD license.
+dnf-repo is distributed under the GPL license version 3 or later.
 
 The source repository is https://github.com/juhp/dnf-repo/
 
