@@ -14,7 +14,8 @@ import Network.HTTP.Directory (httpExists', (+/+))
 import SimpleCmd
 import SimpleCmdArgs
 import SimplePrompt (yesNo)
-import System.Directory (doesFileExist, findExecutable, withCurrentDirectory,
+import System.Directory (doesDirectoryExist, doesFileExist, findExecutable,
+                         withCurrentDirectory,
 #if !MIN_VERSION_simple_cmd(0,2,4)
                          listDirectory
 #endif
@@ -82,6 +83,9 @@ fedoraCopr = "copr.fedorainfracloud.org"
 kojiRepoTemplate :: FilePath
 kojiRepoTemplate = "koji-REPO.repo"
 
+yumReposD :: String
+yumReposD = "/etc/yum.repos.d"
+
 -- FIXME both enabling and disabled at the same time
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
@@ -90,7 +94,9 @@ runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool -> [Mode]
         -> [String] -> IO ()
 runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
   hSetBuffering stdout NoBuffering
-  withCurrentDirectory "/etc/yum.repos.d" $ do
+  unlessM (doesDirectoryExist yumReposD) $
+    error' $ yumReposD +-+ "not found!"
+  withCurrentDirectory yumReposD $ do
     forM_ modes $
       \case
         AddCopr copr mosname mrelease -> addCoprRepo dryrun debug mosname mrelease copr
@@ -236,7 +242,7 @@ listRepos repoStates = do
 
 deleteRepo :: Bool -> Bool -> FilePath -> IO ()
 deleteRepo dryrun debug repofile = do
-  mowned <- cmdMaybe "rpm" ["-qf", "/etc/yum.repos.d" </> repofile]
+  mowned <- cmdMaybe "rpm" ["-qf", yumReposD </> repofile]
   case mowned of
     Just owner -> warning $ repofile +-+ "owned by" +-+ owner
     Nothing -> do
