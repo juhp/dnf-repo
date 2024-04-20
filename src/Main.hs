@@ -178,19 +178,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
 
 addCoprRepo :: Bool -> Bool -> Maybe String -> Maybe String -> String -> IO ()
 addCoprRepo dryrun debug mosname mrelease repo = do
-  let (server,owner,project) =
-        case  splitOn "/" repo of
-          [] -> error' "empty repo string"
-          [_] -> error' $ "unqualified repo project:" +-+ repo
-          [o,p] -> (fedoraCopr, o , p)
-          [c,o,p] ->
-            if c == "redhat"
-            then ("copr.devel.redhat.com", o, p)
-            else
-              if '.' `elem` c
-              then (c, o, p)
-              else error' $ "unknown copr server:" +-+ repo
-          _ -> error' $ "unknown copr:" +-+ repo
+  let (server,owner,project) = serverOwnerProject repo
       repofile =
         "_copr:" ++ server ++ ':' : mungeGroupFile owner ++ ':' : project <.> "repo"
   whenM (doesFileExist repofile) $
@@ -215,6 +203,21 @@ addCoprRepo dryrun debug mosname mrelease repo = do
 
     mungeGroupUrl ('@':own) = "g" +/+ own
     mungeGroupUrl own = own
+
+    serverOwnerProject rpo =
+        case  splitOn "/" rpo of
+          [] -> error' "empty repo string"
+          [_] -> error' $ "unqualified repo project:" +-+ rpo
+          [o,p] -> (fedoraCopr, o , p)
+          [c,o,p] ->
+            if c == "redhat"
+            then ("copr.devel.redhat.com", o, p)
+            else
+              if '.' `elem` c
+              then (c, o, p)
+              else error' $ "unknown copr server:" +-+ rpo
+          ["copr",_,_,_] -> serverOwnerProject $ dropPrefix "copr/" rpo
+          _ -> error' $ "unknown copr:" +-+ rpo
 
 addKojiRepo :: Bool -> Bool -> String -> IO ()
 addKojiRepo dryrun debug repo = do
