@@ -9,9 +9,13 @@ import Data.Bifunctor (bimap)
 import Data.Char (isDigit)
 import Data.List.Extra
 import Data.Maybe (isJust, mapMaybe, maybeToList)
-import Network.Curl
+import Network.Curl (curlGetString, CurlCode(CurlOK))
 import Network.HTTP.Directory (httpExists', (+/+))
-import SimpleCmd
+import SimpleCmd (cmd, cmdLines, cmdMaybe, error', grep, warning, (+-+),
+#if MIN_VERSION_simple_cmd(0,2,4)
+                  filesWithExtension
+#endif
+                 )
 import SimpleCmdArgs
 import SimplePrompt (yesNo)
 import System.Directory (doesDirectoryExist, doesFileExist, findExecutable,
@@ -136,7 +140,7 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         else do
         let changes = concatMap saveRepo actions
         unless (null changes) $ do
-          ok <- yesNo $ "Save changed repo" ++ " enabled state" ++ ['s' | length changes > 1]
+          ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
           when ok $ do
             mdnf3 <- findExecutable "dnf-3"
             case mdnf3 of
@@ -190,14 +194,14 @@ addCoprRepo dryrun debug mosname mrelease repo = do
       repofile =
         "_copr:" ++ server ++ ':' : mungeGroupFile owner ++ ':' : project <.> "repo"
   whenM (doesFileExist repofile) $
-    error' $ "repo already defined: " ++ repofile
+    error' $ "repo already defined:" +-+ repofile
   osName <- maybe getRpmOSName return mosname
   osVersion <- maybe getRpmOsRelease return mrelease
   let repofileUrl = "https://" ++ server +/+ "coprs" +/+ mungeGroupUrl owner +/+ project +/+ "repo" +/+ osName ++ '-' : osVersion +/+ mungeGroupFile owner ++ '-' : project <.> "repo"
   (curlres,curlcontent) <- curlGetString repofileUrl []
   unless (curlres == CurlOK) $
     error' $ "downloading failed of" +-+ repofileUrl
-  putStrLn $ "Setting up copr repo " ++ repo
+  putStrLn $ "Setting up copr repo" +-+ repo
   withTempDir $ \ tmpdir -> do
     let tmpfile = tmpdir </> repofile
     unless dryrun $ writeFile tmpfile $
@@ -217,14 +221,14 @@ addKojiRepo dryrun debug repo = do
   sysarch <- cmd "rpm" ["--eval", "%{_arch}"]
   -- FIXME repo validation/sanity: not "-k list" or other dnf command
   let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "latest" +/+ sysarch ++ "/"
-  unlessM (httpExists' repourl) $ error' $ "no such koji repo: " ++ repourl
+  unlessM (httpExists' repourl) $ error' $ "no such koji repo:" +-+ repourl
   template <- getDataFileName kojiRepoTemplate
   repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
   let repofile = replace "REPO" repo kojiRepoTemplate
   exists <- doesFileExist repofile
   if exists
-    then error' $ "repo already defined: " ++ repofile
-    else putStrLn $ "Setting up koji repo " ++ repo
+    then error' $ "repo already defined:" +-+ repofile
+    else putStrLn $ "Setting up koji repo" +-+ repo
   withTempDir $ \ tmpdir -> do
     let tmpfile = tmpdir </> repofile
     unless dryrun $ writeFile tmpfile repodef
@@ -248,7 +252,7 @@ deleteRepo dryrun debug repofile = do
   case mowned of
     Just owner -> warning $ repofile +-+ "owned by" +-+ owner
     Nothing -> do
-      ok <- yesNo $ "Remove " ++ takeFileName repofile
+      ok <- yesNo $ "Remove" +-+ takeFileName repofile
       when ok $ do
         doSudo dryrun debug "rm" [repofile]
 
