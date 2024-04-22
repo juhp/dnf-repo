@@ -13,6 +13,7 @@ module State (
   )
 where
 
+--import Debug.Trace (traceShowId)
 import Data.Either (partitionEithers)
 import Data.List.Extra (dropPrefix, dropSuffix, foldl',
                         isPrefixOf, isInfixOf, isSuffixOf, nub,

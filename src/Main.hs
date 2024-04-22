@@ -58,7 +58,8 @@ main = do
       (fmap . fmap . fmap . fmap) cleanupReponame . strOptionWith
       where
         cleanupReponame =
-          dropWhileEnd (== '/') . dropWhile (== '/') . replace ":" "/"
+          -- FIXME handle copr url too
+          replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/')
 
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
@@ -207,7 +208,7 @@ addCoprRepo dryrun debug mosname mrelease repo = do
     mungeGroupUrl own = own
 
     serverOwnerProject rpo =
-        case  splitOn "/" rpo of
+        case  splitOn ":" rpo of
           [] -> error' "empty repo string"
           [_] -> error' $ "unqualified repo project:" +-+ rpo
           [o,p] -> (fedoraCopr, o , p)
