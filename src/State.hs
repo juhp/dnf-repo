@@ -151,11 +151,10 @@ updateState :: [ChangeEnable] -> RepoState -> RepoState
 updateState [] rs = rs
 updateState (ce:ces) re@(repo,(enabled,file)) =
   case ce of
-    -- FIXME can probably drop enable/not enabled
     Disable r True | r == repo && enabled -> (repo,(False,file))
     Enable r True | r == repo && not enabled -> (repo,(True,file))
-    Only r True | r == repo -> (repo,(True,file))
-    Only r False | r == repo -> (repo,(True,file))
+    Only r True | r == repo && not enabled -> (repo,(True,file))
+    Only r True | r /= repo && enabled -> (repo,(False,file))
     _ -> updateState ces re
 
 selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
