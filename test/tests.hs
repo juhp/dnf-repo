@@ -13,6 +13,7 @@ tests =
   ,["-e", "openh264"]
   ,["-e", "rawhide"]
   ,["-d", "update"]
+  ,["-o", "fedora"]
   ,["--enable-source"]
   ,["-d", "*", "--enable-source"]
   ]
