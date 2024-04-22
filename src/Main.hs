@@ -18,7 +18,7 @@ import SimpleCmd (cmd, cmdLines, cmdMaybe, error', grep, warning, (+-+),
                  )
 import SimpleCmdArgs
 import SimplePrompt (yesNo)
-import System.Directory (doesDirectoryExist, doesFileExist, findExecutable,
+import System.Directory (doesDirectoryExist, doesFileExist, findFile,
                          withCurrentDirectory,
 #if !MIN_VERSION_simple_cmd(0,2,4)
                          listDirectory
@@ -48,6 +48,7 @@ main = do
     <*> switchWith 'D' "debug" "Debug output"
     <*> switchWith 'l' "list" "List all repos"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
+    <*> switchLongWith "dnf4" "Use dnf4 (if dnf5 available)"
     <*> optional (flagWith' True 'w' "weak-deps" "Use weak dependencies" <|>
                   flagWith' False 'W' "no-weak-deps" "Disable weak dependencies")
     <*> switchLongWith "exact" "Match repo names exactly"
@@ -96,13 +97,18 @@ kojiRepoTemplate = "koji-REPO.repo"
 yumReposD :: String
 yumReposD = "/etc/yum.repos.d"
 
+checkSystemPathFile :: String -> IO (Maybe String)
+checkSystemPathFile prog = do
+  let path = splitOn ":" "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+  fmap takeFileName <$> findFile path prog
+
 -- FIXME both enabling and disabled at the same time
 -- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
-runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool -> [Mode]
-        -> [String] -> IO ()
-runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
+runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool
+        -> [Mode] -> [String] -> IO ()
+runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
   hSetBuffering stdout NoBuffering
   unlessM (doesDirectoryExist yumReposD) $
     error' $ yumReposD +-+ "not found!"
@@ -149,12 +155,13 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
         unless (null changes) $ do
           ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
           when ok $ do
-            mdnf3 <- findExecutable "dnf-3"
+            mdnf3 <- checkSystemPathFile "dnf-3"
             case mdnf3 of
-              -- FIXME cannot combine --disable and --enable
-              Just dnf3 -> doSudo dryrun debug dnf3 $ "config-manager" : changes
-              -- FIXME need to have repo files in changes
+              Just dnf3 ->
+                -- FIXME cannot combine --disable and --enable
+                doSudo dryrun debug dnf3 $ "config-manager" : changes
               Nothing ->
+                -- FIXME need to have repo files in changes
                 -- doSudo dryrun debug "sed" $ "config-manager" : changes
                 error' "Saving repo state not yet supported without dnf"
     if null args
@@ -165,21 +172,21 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
       else do
       sleep 1
       when save $ putStrLn ""
-      mdnf <- do
-        mdnf5 <- findExecutable "dnf5"
-        case mdnf5 of
-          Just dnf5 -> return $ Just dnf5
-          Nothing -> findExecutable "dnf"
+      mdnf <-
+        if dnf4
+        then checkSystemPathFile "dnf"
+        else
+          maybeM (checkSystemPathFile "dnf") (return . Just) $
+          checkSystemPathFile "dnf5"
       case mdnf of
-        Just dnf -> do
-          when debug $ putStrLn dnf
+        Just dnf ->
           let repoargs = mapMaybe changeRepo actions
               weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
               quietopt = if quiet then ("-q" :) else id
               cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
-            in doSudo dryrun debug dnf $ quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args
+          in doSudo dryrun debug dnf $ quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args
         -- FIXME rpm-ostree install supports --enablerepo
-        Nothing -> error' "rpm-ostree not supported"
+        Nothing -> error' "missing dnf (rpm-ostree is not supported)"
   where
     mungeArg :: String -> String
     mungeArg "distrosync" = "distro-sync"
