@@ -147,7 +147,9 @@ runMain dryrun quiet debug listrepos save mweakdeps exact modes args = do
               -- FIXME cannot combine --disable and --enable
               Just dnf3 -> doSudo dryrun debug dnf3 $ "config-manager" : changes
               -- FIXME need to have repo files in changes
-              Nothing -> doSudo dryrun debug "sed" $ "config-manager" : changes
+              Nothing ->
+                -- doSudo dryrun debug "sed" $ "config-manager" : changes
+                error' "Saving repo state not yet supported without dnf"
     if null args
       then
       when (null actions || listrepos) $ do
