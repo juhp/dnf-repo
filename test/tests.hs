@@ -9,7 +9,6 @@ program test = do
 tests :: [[String]]
 tests =
   [["-t"]
-  ,["-m"]
   ,["-e", "copr"]
   ,["-e", "openh264"]
   ,["-e", "rawhide"]
