@@ -59,7 +59,7 @@ main = do
       where
         cleanupReponame =
           -- FIXME handle copr url too
-          replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/')
+          replace "@" "group_" . replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/')
 
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
@@ -185,12 +185,12 @@ addCoprRepo :: Bool -> Bool -> Maybe String -> Maybe String -> String -> IO ()
 addCoprRepo dryrun debug mosname mrelease repo = do
   let (server,owner,project) = serverOwnerProject repo
       repofile =
-        "_copr:" ++ server ++ ':' : mungeGroupFile owner ++ ':' : project <.> "repo"
+        "_copr:" ++ server ++ ':' : owner ++ ':' : project <.> "repo"
   whenM (doesFileExist repofile) $
     error' $ "repo already defined:" +-+ repofile
   osName <- maybe getRpmOSName return mosname
   osVersion <- maybe getRpmOsRelease return mrelease
-  let repofileUrl = "https://" ++ server +/+ "coprs" +/+ mungeGroupUrl owner +/+ project +/+ "repo" +/+ osName ++ '-' : osVersion +/+ mungeGroupFile owner ++ '-' : project <.> "repo"
+  let repofileUrl = "https://" ++ server +/+ "coprs" +/+ mungeGroupUrl owner +/+ project +/+ "repo" +/+ osName ++ '-' : osVersion +/+ owner ++ '-' : project <.> "repo"
   (curlres,curlcontent) <- curlGetString repofileUrl []
   unless (curlres == CurlOK) $
     error' $ "downloading failed of" +-+ repofileUrl
@@ -203,10 +203,7 @@ addCoprRepo dryrun debug mosname mrelease repo = do
     doSudo dryrun debug "cp" [tmpfile, repofile]
     putStrLn ""
   where
-    mungeGroupFile ('@':own) = "group_" ++ own
-    mungeGroupFile own = own
-
-    mungeGroupUrl ('@':own) = "g" +/+ own
+    mungeGroupUrl ('g':'r':'o':'u':'p':'_':own) = "g" +/+ own
     mungeGroupUrl own = own
 
     serverOwnerProject rpo =

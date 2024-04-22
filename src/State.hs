@@ -167,7 +167,7 @@ selectRepo exact repostates modes =
       let results = nub $ mapMaybe (selectRepoMode mode acc) repostates
       in
         case results of
-          [] -> []
+          [] -> error' ("no match for repo pattern action: " ++ show mode)
           [_] -> acc ++ results
           _ ->
             acc ++
