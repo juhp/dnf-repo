@@ -77,10 +77,10 @@ main = do
       flagLongWith' (Specific EnableSource) "enable-source" "Enable source repos" <|>
       flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos" <|>
       AddCopr
-      <$> repoOptionWith 'c' "add-copr" "COPR" "Create repo file for copr repo"
+      <$> repoOptionWith 'c' "add-copr" "[SERVER/]COPR/PROJECT" "Create repo file for copr repo (defaults to fedora server)"
       <*> optional (strOptionLongWith "osname" "OSNAME" "Specify OS Name to override (eg epel)")
       <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
-      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for koji repo (f40-build, rawhide, epel9-build, etc)" <|>
+      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for a Fedora koji repo (f40-build, rawhide, epel9-build, etc)" <|>
       RepoURL <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
 
 fedoraCopr :: String
