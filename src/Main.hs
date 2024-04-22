@@ -59,7 +59,11 @@ main = do
       where
         cleanupReponame =
           -- FIXME handle copr url too
-          replace "@" "group_" . replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/')
+          serverAliases . replace "@" "group_" . replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/')
+
+        serverAliases ('r':'e':'d':'h':'a':'t':':':copr) =
+          "copr.devel.redhat.com:" ++ copr
+        serverAliases copr = copr
 
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
@@ -212,12 +216,9 @@ addCoprRepo dryrun debug mosname mrelease repo = do
           [_] -> error' $ "unqualified repo project:" +-+ rpo
           [o,p] -> (fedoraCopr, o , p)
           [c,o,p] ->
-            if c == "redhat"
-            then ("copr.devel.redhat.com", o, p)
-            else
-              if '.' `elem` c
-              then (c, o, p)
-              else error' $ "unknown copr server:" +-+ rpo
+            if '.' `elem` c
+            then (c, o, p)
+            else error' $ "unknown copr server:" +-+ rpo
           ["copr",_,_,_] -> serverOwnerProject $ dropPrefix "copr/" rpo
           _ -> error' $ "unknown copr:" +-+ rpo
 
