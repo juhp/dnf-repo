@@ -1,5 +1,16 @@
 # dnf-repo releases
 
+## 0.6 (2024-04-22)
+- switch license from BSD to GPLv3+
+- add --only option to only --repo enable certain repos
+- add --dnf4 switch to avoid dnf5
+- --add-copr: copr is now available while being added
+- selectRepo: use left fold to not reverse order of repo actions
+- normalize copr name internally
+- error if /etc/yum.repo.d doesn't exist
+- fix 0.5.6 regression: error again when no matching repo
+- --list output now takes --only into account properly
+
 ## 0.5.6 (2024-04-18)
 - --add-copr now supports non-fedora copr servers and downloads .repo with curl
 - with --add-copr can override --osname OS and --releasever VERSION

@@ -14,29 +14,31 @@ This tool can temporarily enable/disable repo(s) selected by substring(s).
 Changes to repos' enabled states can be saved too.
 It is also possible to expire repo caches individually.
 
-There are also smart options to enable/disable testing/modular repos
-(and even source/debuginfo repos), and also to a Copr repo or Koji repo file.
+There are also smart options to enable/disable testing repos
+(and even source/debuginfo repos),
+and also to add Copr repo or Koji repo file.
 
 ## Help
 
 `$ dnf-repo --version`
 ```
-0.5.6
+0.6
 ```
 `$ dnf-repo --help`
 ```
 DNF wrapper repo tool
 
 Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
-                [-s|--save] [(-w|--weak-deps) | (-W|--no-weak-deps)] [--exact]
+                [-s|--save] [--dnf4] [(-w|--weak-deps) | (-W|--no-weak-deps)]
+                [--exact]
                 [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                  (-x|--expire REPOPAT) | (-X|--clear-expires) |
-                  (-E|--delete-repofile REPOPAT) | (-t|--enable-testing) |
-                  (-T|--disable-testing) | (-m|--enable-modular) |
-                  (-M|--disable-modular) | --enable-debuginfo |
-                  --disable-debuginfo | --enable-source | --disable-source |
-                  (-c|--add-copr COPR) [--osname OSNAME]
-                  [--releasever RELEASEVER] |
+                  (-o|--only REPOPAT) | (-x|--expire REPOPAT) |
+                  (-X|--clear-expires) | (-E|--delete-repofile REPOPAT) |
+                  (-t|--enable-testing) | (-T|--disable-testing) |
+                  (-m|--enable-modular) | (-M|--disable-modular) |
+                  --enable-debuginfo | --disable-debuginfo | --enable-source |
+                  --disable-source | (-c|--add-copr [SERVER/]COPR/PROJECT)
+                  [--osname OSNAME] [--releasever RELEASEVER] |
                   (-k|--add-koji REPO) | (-u|--repourl URL)] [DNFARGS]
 
   see https://github.com/juhp/dnf-repo#readme
@@ -49,11 +51,13 @@ Available options:
   -D,--debug               Debug output
   -l,--list                List all repos
   -s,--save                Save the repo enable/disable state
+  --dnf4                   Use dnf4 (if dnf5 available)
   -w,--weak-deps           Use weak dependencies
   -W,--no-weak-deps        Disable weak dependencies
   --exact                  Match repo names exactly
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
+  -o,--only REPOPAT        Only use matching repos
   -x,--expire REPOPAT      Expire repo cache
   -X,--clear-expires       Undo cache expirations
   -E,--delete-repofile REPOPAT
@@ -66,11 +70,13 @@ Available options:
   --disable-debuginfo      Disable debuginfo repos
   --enable-source          Enable source repos
   --disable-source         Disable source repos
-  -c,--add-copr COPR       Create repo file for copr repo
+  -c,--add-copr [SERVER/]COPR/PROJECT
+                           Create repo file for copr repo (defaults to fedora
+                           server)
   --osname OSNAME          Specify OS Name to override (eg epel)
   --releasever RELEASEVER  Specify OS Release Version to override (eg rawhide)
-  -k,--add-koji REPO       Create repo file for koji repo (f40-build, rawhide,
-                           epel9-build, etc)
+  -k,--add-koji REPO       Create repo file for a Fedora koji repo (f40-build,
+                           rawhide, epel9-build, etc)
   -u,--repourl URL         Use temporary repo from a baseurl
 ```
 
@@ -115,6 +121,7 @@ Disable fedora modular and cisco openh264 repos permanently:
 ```shellsession
 $ dnf-repo --M -d h264 --save
 ```
+(All modular repos were dropped in Fedora 39.)
 
 ### Use only source repos
 ```shellsession

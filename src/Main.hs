@@ -103,7 +103,6 @@ checkSystemPathFile prog = do
   fmap takeFileName <$> findFile path prog
 
 -- FIXME both enabling and disabled at the same time
--- FIXME --enable-all-coprs (for updating etc)
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
 runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool

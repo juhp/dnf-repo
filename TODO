@@ -3,5 +3,7 @@
   - bonus: switch from updates-testing to updates
 - support no dnf (ie rpm-ostree): don't use config-manager
 - cache copr history etc
-- support adding arbitrary .repo url
 - delete non-existent repos
+- use config-ini?
+- handle full copr url: https://server/coprs/owner/project
+- add --only-source
