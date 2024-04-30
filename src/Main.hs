@@ -196,22 +196,24 @@ addCoprRepo dryrun debug mosname mrelease repo = do
   let (server,owner,project) = serverOwnerProject repo
       repofile =
         "_copr:" ++ server ++ ':' : owner ++ ':' : project <.> "repo"
-  whenM (doesFileExist repofile) $
-    error' $ "repo already defined:" +-+ repofile
-  osName <- maybe getRpmOSName return mosname
-  osVersion <- maybe getRpmOsRelease return mrelease
-  let repofileUrl = "https://" ++ server +/+ "coprs" +/+ mungeGroupUrl owner +/+ project +/+ "repo" +/+ osName ++ '-' : osVersion +/+ owner ++ '-' : project <.> "repo"
-  (curlres,curlcontent) <- curlGetString repofileUrl []
-  unless (curlres == CurlOK) $
-    error' $ "downloading failed of" +-+ repofileUrl
-  putStrLn $ "Setting up copr repo" +-+ repo
-  withTempDir $ \ tmpdir -> do
-    let tmpfile = tmpdir </> repofile
-    unless dryrun $ writeFile tmpfile $
-      maybe id (replace "$releasever") mrelease $
-      replace "enabled=1" "enabled=0" curlcontent
-    doSudo dryrun debug "cp" [tmpfile, repofile]
-    putStrLn ""
+  exists <- doesFileExist repofile
+  if exists
+    then warning $ "copr repo already defined:" +-+ repofile
+    else do
+    osName <- maybe getRpmOSName return mosname
+    osVersion <- maybe getRpmOsRelease return mrelease
+    let repofileUrl = "https://" ++ server +/+ "coprs" +/+ mungeGroupUrl owner +/+ project +/+ "repo" +/+ osName ++ '-' : osVersion +/+ owner ++ '-' : project <.> "repo"
+    (curlres,curlcontent) <- curlGetString repofileUrl []
+    unless (curlres == CurlOK) $
+      error' $ "downloading failed of" +-+ repofileUrl
+    putStrLn $ "Setting up copr repo" +-+ repo
+    withTempDir $ \ tmpdir -> do
+      let tmpfile = tmpdir </> repofile
+      unless dryrun $ writeFile tmpfile $
+        maybe id (replace "$releasever") mrelease $
+        replace "enabled=1" "enabled=0" curlcontent
+      doSudo dryrun debug "cp" [tmpfile, repofile]
+      putStrLn ""
   where
     mungeGroupUrl ('g':'r':'o':'u':'p':'_':own) = "g" +/+ own
     mungeGroupUrl own = own
@@ -239,13 +241,14 @@ addKojiRepo dryrun debug repo = do
   let repofile = replace "REPO" repo kojiRepoTemplate
   exists <- doesFileExist repofile
   if exists
-    then error' $ "repo already defined:" +-+ repofile
-    else putStrLn $ "Setting up koji repo" +-+ repo
-  withTempDir $ \ tmpdir -> do
-    let tmpfile = tmpdir </> repofile
-    unless dryrun $ writeFile tmpfile repodef
-    doSudo dryrun debug "cp" [tmpfile, repofile]
-    putStrLn ""
+    then warning $ "koji repo already defined:" +-+ repofile
+    else do
+    putStrLn $ "Setting up koji repo" +-+ repo
+    withTempDir $ \ tmpdir -> do
+      let tmpfile = tmpdir </> repofile
+      unless dryrun $ writeFile tmpfile repodef
+      doSudo dryrun debug "cp" [tmpfile, repofile]
+      putStrLn ""
 
 listRepos :: [RepoState] -> IO ()
 listRepos repoStates = do
