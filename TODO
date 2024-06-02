@@ -5,5 +5,4 @@
 - cache copr history etc
 - delete non-existent repos
 - use config-ini?
-- handle full copr url: https://server/coprs/owner/project
 - add --only-source

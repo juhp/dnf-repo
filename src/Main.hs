@@ -59,11 +59,16 @@ main = do
       where
         cleanupReponame =
           -- FIXME handle copr url too
-          serverAliases . replace "@" "group_" . replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/')
+          serverAliases . replace "@" "group_" . replace "/" ":" . dropWhileEnd (== '/') . dropWhile (== '/') . handleCoprUrl
 
         serverAliases ('r':'e':'d':'h':'a':'t':':':copr) =
           "copr.devel.redhat.com:" ++ copr
         serverAliases copr = copr
+
+        handleCoprUrl url =
+          if "https:" `isPrefixOf` url
+          then replace "coprs/" "" $ dropPrefix "https:" url
+          else url
 
     modeOpt =
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
@@ -81,7 +86,7 @@ main = do
       flagLongWith' (Specific EnableSource) "enable-source" "Enable source repos" <|>
       flagLongWith' (Specific DisableSource) "disable-source" "Disable source repos" <|>
       AddCopr
-      <$> repoOptionWith 'c' "add-copr" "[SERVER/]COPR/PROJECT" "Create repo file for copr repo (defaults to fedora server)"
+      <$> repoOptionWith 'c' "add-copr" "[SERVER/]COPR/PROJECT|URL" "Install copr repo file (defaults to fedora server)"
       <*> optional (strOptionLongWith "osname" "OSNAME" "Specify OS Name to override (eg epel)")
       <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
       AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for a Fedora koji repo (f40-build, rawhide, epel9-build, etc)" <|>
