@@ -236,7 +236,7 @@ addCoprRepo dryrun debug mosname mrelease repo = do
             if '.' `elem` c
             then (c, o, p)
             else error' $ "unknown copr server:" +-+ rpo
-          ["copr",_,_,_] -> serverOwnerProject $ dropPrefix "copr/" rpo
+          ["copr",_,_,_] -> serverOwnerProject $ dropPrefix "copr:" rpo
           _ -> error' $ "unknown copr:" +-+ rpo
 
 addKojiRepo :: Bool -> Bool -> String -> IO ()
