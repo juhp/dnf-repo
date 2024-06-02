@@ -181,7 +181,18 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
               weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
               quietopt = if quiet then ("-q" :) else id
               cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
-          in doSudo dryrun debug dnf $ quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args
+              extraargs =
+                -- special case for "dnf-repo -c owner/project install"
+                case modes of
+                  [mode] ->
+                    case mode of
+                      AddCopr proj _ _ | args == ["install"] ->
+                                           [takeWhileEnd (/= ':') proj]
+                      _ -> []
+                  _ -> []
+          in doSudo dryrun debug dnf $
+             quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args ++
+             extraargs
         -- FIXME rpm-ostree install supports --enablerepo
         Nothing -> error' "missing dnf (rpm-ostree is not supported)"
   where
