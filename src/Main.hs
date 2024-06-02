@@ -28,7 +28,6 @@ import System.Environment (lookupEnv)
 import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 import System.IO.Extra (withTempDir)
-import System.Time.Extra (sleep)
 
 import Paths_dnf_repo (getDataFileName, version)
 import ExpireRepos
@@ -169,7 +168,6 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
       when save $ putStrLn ""
       listRepos $ map (updateState actions) nameStates
       else do
-      sleep 1
       when save $ putStrLn ""
       mdnf <-
         if dnf4
