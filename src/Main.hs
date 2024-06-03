@@ -118,8 +118,10 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
   withCurrentDirectory yumReposD $ do
     forM_ modes $
       \case
-        AddCopr copr mosname mrelease -> addCoprRepo dryrun debug mosname mrelease copr
-        AddKoji repo -> addKojiRepo dryrun debug repo
+        AddCopr copr mosname mrelease ->
+          addCoprRepo dryrun debug mosname mrelease copr
+        AddKoji repo ->
+          addKojiRepo dryrun debug repo
         _ -> return ()
     repofiles <- filesWithExtension "./" "repo"
     when debug $
