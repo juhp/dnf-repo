@@ -89,8 +89,13 @@ main = do
       <$> repoOptionWith 'c' "add-copr" "[SERVER/]COPR/PROJECT|URL" "Install copr repo file (defaults to fedora server)"
       <*> optional (strOptionLongWith "osname" "OSNAME" "Specify OS Name to override (eg epel)")
       <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
-      AddKoji <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for a Fedora koji repo (f40-build, rawhide, epel9-build, etc)" <|>
-      RepoURL <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
+      AddKoji
+      <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for a Fedora koji repo (f40-build, rawhide, epel9-build, etc)" <|>
+      AddRepo
+      <$> strOptionWith 'r' "add-repofile" "REPOFILEURL" "Install repo file"
+      <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
+      RepoURL
+      <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
 
 fedoraCopr :: String
 fedoraCopr = "copr.fedorainfracloud.org"
@@ -122,11 +127,13 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
           addCoprRepo dryrun debug mosname mrelease copr
         AddKoji repo ->
           addKojiRepo dryrun debug repo
+        AddRepo repo mrelease ->
+          addRepoFile dryrun debug mrelease repo
         _ -> return ()
     repofiles <- filesWithExtension "./" "repo"
-    when debug $
-      print modes
+    when debug $ print modes
     nameStates <- sort <$> concatMapM readRepos repofiles
+    when debug $ mapM_ print nameStates
     let actions = selectRepo exact nameStates modes
         moreoutput = not (null args) || null actions || listrepos
     when (debug && not (null modes)) $
@@ -263,6 +270,29 @@ addKojiRepo dryrun debug repo = do
     withTempDir $ \ tmpdir -> do
       let tmpfile = tmpdir </> repofile
       unless dryrun $ writeFile tmpfile repodef
+      doSudo dryrun debug "cp" [tmpfile, repofile]
+      putStrLn ""
+
+-- FIXME maybe handle string (vscode) or local file?
+addRepoFile :: Bool -> Bool -> Maybe String -> String -> IO ()
+addRepoFile dryrun debug mrelease url = do
+  unless (".repo" `isExtensionOf` url) $
+    error' $ url +-+ "does not appear to be a .repo file"
+  let repofile = takeFileName url
+  exists <- doesFileExist repofile
+  if exists
+    then warning $ "repo file already exists:" +-+ repofile
+    else do
+    (curlres,curlcontent) <- curlGetString url []
+    unless (curlres == CurlOK) $
+      error' $ "downloading failed of" +-+ url
+    putStrLn $ "Setting up" +-+ repofile
+    withTempDir $ \ tmpdir -> do
+      let tmpfile = tmpdir </> repofile
+      unless dryrun $ writeFile tmpfile $
+        maybe id (replace "$releasever") mrelease $
+        maybe id (replace "$releasever") mrelease $
+        replace "enabled=1" "enabled=0" curlcontent
       doSudo dryrun debug "cp" [tmpfile, repofile]
       putStrLn ""
 

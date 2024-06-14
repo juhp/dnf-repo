@@ -20,12 +20,13 @@ import Data.List.Extra (dropPrefix, dropSuffix, foldl',
                         replace, sortOn, stripInfix)
 import Data.Maybe (mapMaybe)
 import SimpleCmd (error', (+-+))
+import System.FilePath (takeBaseName)
 import System.FilePath.Glob (compile, match)
 
 import YumRepoFile (RepoState)
 
 data Mode = AddCopr String (Maybe String) (Maybe String) | AddKoji String
-          | RepoURL String
+          | AddRepo String (Maybe String) | RepoURL String
           | EnableRepo String | DisableRepo String | OnlyRepo String
           | ExpireRepo String | ClearExpires
           | DeleteRepo String
@@ -35,6 +36,7 @@ data Mode = AddCopr String (Maybe String) (Maybe String) | AddKoji String
 modePattern :: Mode -> Maybe String
 modePattern (AddCopr c _ _) = Just c
 modePattern (AddKoji k) = Just k
+modePattern (AddRepo r _) = Just r
 modePattern (RepoURL _) = Nothing
 modePattern (EnableRepo r) = Just r
 modePattern (DisableRepo r) = Just r
@@ -195,6 +197,8 @@ selectRepo exact repostates modes =
           maybeChange repo isSuffixOf (not enabled) (Enable name)
         AddKoji repo ->
           maybeChange repo isSuffixOf (not enabled) (Enable name)
+        AddRepo repo _ ->
+          maybeChange (takeBaseName repo) isSuffixOf (not enabled) (Enable name)
         RepoURL url -> Just $ BaseURL url
         EnableRepo pat ->
           maybeChange pat matchesRepo (not enabled) (Enable name)
@@ -247,7 +251,8 @@ selectRepo exact repostates modes =
     matchesRepo :: String -> String -> Bool
     matchesRepo "" = error' "empty repo pattern"
     matchesRepo pat
-      | isGlob pat = (match . compile) $
+      | isGlob pat =
+        (match . compile) $
         if exact
         then pat
         else
