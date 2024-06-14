@@ -1,5 +1,12 @@
 # dnf-repo releases
 
+## 0.6.1 (2024-06-14)
+- add `--add-repofile URL` action
+- `--add-copr` can now also take an url
+- `--add-copr owner/pkg install` will now expand to "install pkg"
+- allow `-add-copr` and `--add-koji` to continue even if the .repo exists
+- get 1s speedup by dropping sleep 1!
+
 ## 0.6 (2024-04-22)
 - switch license from BSD to GPLv3+
 - add --only option to only --repo enable certain repos

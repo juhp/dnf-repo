@@ -21,10 +21,12 @@ and also to add Copr repo or Koji repo file.
 ## Help
 
 `$ dnf-repo --version`
+
 ```
-0.6
+0.6.1
 ```
 `$ dnf-repo --help`
+
 ```
 DNF wrapper repo tool
 
@@ -37,9 +39,11 @@ Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
                   (-t|--enable-testing) | (-T|--disable-testing) |
                   (-m|--enable-modular) | (-M|--disable-modular) |
                   --enable-debuginfo | --disable-debuginfo | --enable-source |
-                  --disable-source | (-c|--add-copr [SERVER/]COPR/PROJECT)
+                  --disable-source | (-c|--add-copr [SERVER/]COPR/PROJECT|URL)
                   [--osname OSNAME] [--releasever RELEASEVER] |
-                  (-k|--add-koji REPO) | (-u|--repourl URL)] [DNFARGS]
+                  (-k|--add-koji REPO) | (-r|--add-repofile REPOFILEURL)
+                  [--releasever RELEASEVER] |
+                  (-u|--repourl URL)] [DNFARGS]
 
   see https://github.com/juhp/dnf-repo#readme
 
@@ -70,13 +74,15 @@ Available options:
   --disable-debuginfo      Disable debuginfo repos
   --enable-source          Enable source repos
   --disable-source         Disable source repos
-  -c,--add-copr [SERVER/]COPR/PROJECT
-                           Create repo file for copr repo (defaults to fedora
-                           server)
+  -c,--add-copr [SERVER/]COPR/PROJECT|URL
+                           Install copr repo file (defaults to fedora server)
   --osname OSNAME          Specify OS Name to override (eg epel)
   --releasever RELEASEVER  Specify OS Release Version to override (eg rawhide)
   -k,--add-koji REPO       Create repo file for a Fedora koji repo (f40-build,
                            rawhide, epel9-build, etc)
+  -r,--add-repofile REPOFILEURL
+                           Install repo file
+  --releasever RELEASEVER  Specify OS Release Version to override (eg rawhide)
   -u,--repourl URL         Use temporary repo from a baseurl
 ```
 
@@ -111,17 +117,18 @@ $ dnf-repo -c varlad/helix install helix
 ```
 (note the copr repo is not permanently enabled).
 
+Also you can use the equivalent abbreviation: `dnf-repo -c varlad/helix install` if the package and repo have the same name.
+
 Later update with the copr:
 ```shellsession
 $ dnf-repo -e helix update
 ```
 
 ### Changing system repo config
-Disable fedora modular and cisco openh264 repos permanently:
+Disable fedora updates-testing and cisco openh264 repos permanently:
 ```shellsession
-$ dnf-repo --M -d h264 --save
+$ dnf-repo -T -d h264 --save
 ```
-(All modular repos were dropped in Fedora 39.)
 
 ### Use only source repos
 ```shellsession

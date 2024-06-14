@@ -1,5 +1,5 @@
 name:                dnf-repo
-version:             0.6
+version:             0.6.1
 synopsis:            A dnf wrapper with fine control of enabled repos
 description:
         A command-line wrapper of the dnf package manager to
@@ -22,7 +22,7 @@ tested-with:         GHC == 8.6.5
                      ||  == 9.0.2
                      ||  == 9.2.7
                      ||  == 9.4.8
-                     ||  == 9.6.4
+                     ||  == 9.6.5
                      ||  == 9.8.2
 data-dir:            data
 data-files:          koji-REPO.repo
