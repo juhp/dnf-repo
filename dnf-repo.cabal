@@ -6,9 +6,9 @@ description:
         control the repos enabled for a dnf invocation.
 license:             GPL-3
 license-file:        COPYING
-author:              Jens Petersen <juhpetersen@gmail.com>
-maintainer:          Jens Petersen <juhpetersen@gmail.com>
-copyright:           2022-2024  Jens Petersen <juhpetersen@gmail.com>
+author:              Jens Petersen <petersen@redhat.com>
+maintainer:          Jens Petersen <petersen@redhat.com>
+copyright:           2022-2024  Jens Petersen <petersen@redhat.com>
 category:            Utility
 homepage:            https://github.com/juhp/dnf-repo
 bug-reports:         https://github.com/juhp/dnf-repo/issues
