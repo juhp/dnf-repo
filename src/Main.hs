@@ -388,3 +388,9 @@ getRpmOSName = do
               dropPrefix "\"" $
               dropPrefix idkey osid
     oss -> error' $ "multiple IDs in" +-+ osrelease ++ ":" ++ unwords oss
+
+#if !MIN_VERSION_filepath(1,4,2)
+isExtensionOf :: String -> FilePath -> Bool
+isExtensionOf ext@('.':_) = isSuffixOf ext . takeExtensions
+isExtensionOf ext         = isSuffixOf ('.':ext) . takeExtensions
+#endif
