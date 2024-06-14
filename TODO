@@ -1,4 +1,3 @@
-
 - allow -t for updates-testing even if updates disabled (eg under development)
   - bonus: switch from updates-testing to updates
 - support no dnf (ie rpm-ostree): don't use config-manager

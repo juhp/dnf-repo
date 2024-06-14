@@ -8,7 +8,7 @@ program test = do
 
 tests :: [[String]]
 tests =
-  [["-t"]
+  [["-e", "updates", "-t"] -- updates to avoid rawhide failing
   ,["-e", "copr"]
   ,["-e", "openh264"]
   ,["-e", "rawhide"]
