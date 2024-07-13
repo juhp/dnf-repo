@@ -185,7 +185,7 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
       when save $ putStrLn ""
       mdnf <-
         if dnf4
-        then checkSystemPathFile "dnf"
+        then checkSystemPathFile "dnf-3"
         else
           maybeM (checkSystemPathFile "dnf") (return . Just) $
           checkSystemPathFile "dnf5"
