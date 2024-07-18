@@ -10,8 +10,8 @@ import Data.Char (isDigit)
 import Data.List.Extra
 import Data.Maybe (isJust, mapMaybe, maybeToList)
 import Network.Curl (curlGetString, CurlCode(CurlOK))
-import Network.HTTP.Directory (httpExists', (+/+))
-import SimpleCmd (cmd, cmdLines, cmdMaybe, error', grep, warning, (+-+),
+import Network.HTTP.Directory ((+/+))
+import SimpleCmd (cmdLines, cmdMaybe, error', grep, warning, (+-+),
 #if MIN_VERSION_simple_cmd(0,2,4)
                   filesWithExtension
 #endif
@@ -29,8 +29,9 @@ import System.FilePath
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 import System.IO.Extra (withTempDir)
 
-import Paths_dnf_repo (getDataFileName, version)
+import Paths_dnf_repo (version)
 import ExpireRepos
+import KojiRepo
 import State
 import Sudo
 import YumRepoFile
@@ -99,9 +100,6 @@ main = do
 
 fedoraCopr :: String
 fedoraCopr = "copr.fedorainfracloud.org"
-
-kojiRepoTemplate :: FilePath
-kojiRepoTemplate = "koji-REPO.repo"
 
 yumReposD :: String
 yumReposD = "/etc/yum.repos.d"
@@ -252,26 +250,6 @@ addCoprRepo dryrun debug mosname mrelease repo = do
             else error' $ "unknown copr server:" +-+ rpo
           ["copr",_,_,_] -> serverOwnerProject $ dropPrefix "copr:" rpo
           _ -> error' $ "unknown copr:" +-+ rpo
-
-addKojiRepo :: Bool -> Bool -> String -> IO ()
-addKojiRepo dryrun debug repo = do
-  sysarch <- cmd "rpm" ["--eval", "%{_arch}"]
-  -- FIXME repo validation/sanity: not "-k list" or other dnf command
-  let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "latest" +/+ sysarch ++ "/"
-  unlessM (httpExists' repourl) $ error' $ "no such koji repo:" +-+ repourl
-  template <- getDataFileName kojiRepoTemplate
-  repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
-  let repofile = replace "REPO" repo kojiRepoTemplate
-  exists <- doesFileExist repofile
-  if exists
-    then warning $ "koji repo already defined:" +-+ repofile
-    else do
-    putStrLn $ "Setting up koji repo" +-+ repo
-    withTempDir $ \ tmpdir -> do
-      let tmpfile = tmpdir </> repofile
-      unless dryrun $ writeFile tmpfile repodef
-      doSudo dryrun debug "cp" [tmpfile, repofile]
-      putStrLn ""
 
 -- FIXME maybe handle string (vscode) or local file?
 addRepoFile :: Bool -> Bool -> Maybe String -> String -> IO ()
