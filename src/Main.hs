@@ -48,7 +48,7 @@ main = do
     <*> switchWith 'D' "debug" "Debug output"
     <*> switchWith 'l' "list" "List all repos"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
-    <*> switchLongWith "dnf4" "Use dnf4 (if dnf5 available)"
+    <*> switchWith '4' "dnf4" "Use dnf4 (if dnf5 available)"
     <*> optional (flagWith' True 'w' "weak-deps" "Use weak dependencies" <|>
                   flagWith' False 'W' "no-weak-deps" "Disable weak dependencies")
     <*> switchLongWith "exact" "Match repo names exactly"
