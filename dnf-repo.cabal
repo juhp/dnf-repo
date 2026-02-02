@@ -34,6 +34,7 @@ source-repository head
 executable dnf-repo
   main-is:             Main.hs
   other-modules:       Paths_dnf_repo
+                       Common
                        CoprRepo
                        ExpireRepos
                        KojiRepo

@@ -10,6 +10,7 @@ import System.FilePath
 import System.IO.Extra (withTempDir)
 
 import Paths_dnf_repo (getDataFileName)
+import Common
 import Sudo
 
 kojiRepoTemplate :: FilePath
@@ -17,12 +18,14 @@ kojiRepoTemplate = "koji-REPO.repo"
 
 addKojiRepo :: Bool -> Bool -> String -> IO ()
 addKojiRepo dryrun debug repo = do
-  sysarch <- cmd "rpm" ["--eval", "%{_arch}"]
+  sysarch <- getSysArch
   -- FIXME repo validation/sanity: not "-k list" or other dnf command
   let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "latest" +/+ sysarch ++ "/"
   unlessM (httpExists' repourl) $ error' $ "no such koji repo:" +-+ repourl
   template <- getDataFileName kojiRepoTemplate
-  repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
+  repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g",
+                        "-e", "s/@ARCH@/" ++ sysarch ++ "/",
+                        template]
   let repofile = replace "REPO" repo kojiRepoTemplate
   exists <- doesFileExist repofile
   if exists
