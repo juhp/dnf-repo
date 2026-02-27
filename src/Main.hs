@@ -92,12 +92,12 @@ main = do
       AddCopr
       <$> repoOptionWith 'c' "add-copr" "[SERVER/]COPR/PROJECT|URL" "Install copr repo file (defaults to fedora server)"
       <*> optional (strOptionLongWith "osname" "OSNAME" "Specify OS Name to override (eg epel)")
-      <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
+      <*> optional (strOptionLongWith "copr-releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
       AddKoji
       <$> repoOptionWith 'k' "add-koji" "REPO" "Create repo file for a Fedora koji repo (f40-build, rawhide, epel9-build, etc)" <|>
       AddRepo
       <$> strOptionWith 'r' "add-repofile" "REPOFILEURL" "Install repo file"
-      <*> optional (strOptionLongWith "releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
+      <*> optional (strOptionLongWith "repo-releasever" "RELEASEVER" "Specify OS Release Version to override (eg rawhide)") <|>
       RepoURL
       <$> strOptionWith 'u' "repourl" "URL" "Use temporary repo from a baseurl"
 
