@@ -15,7 +15,6 @@ timestampRepo :: String -> String -> IO ()
 timestampRepo release baseurl = do
   sysarch <- getSysArch
   let url = replace "$releasever" release $
-            replace "$basearch" sysarch $
-            baseurl
+            replace "$basearch" sysarch baseurl
   mtime <- httpLastModified' $ url +/+ "repodata/repomd.xml"
-  whenJust mtime $ print
+  whenJust mtime print

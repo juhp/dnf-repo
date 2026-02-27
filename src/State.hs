@@ -113,7 +113,7 @@ printAction _ (Delete f s) =
   if s
   then Just $ Right $ "delete" +-+ quote f
   else Just $ Left $ quote f +-+ "deletion skipped"
-printAction _ (TimeStamp _ _ _) = Nothing
+printAction _ (TimeStamp {}) = Nothing
 printAction _ (BaseURL _) = Nothing
 
 reduceOutput :: [Either String String] -> [String]
