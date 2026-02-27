@@ -161,32 +161,30 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
         _ -> return False
     when (or outputs && (save || moreoutput) && not quiet) $
       warning ""
+    mpkgmgr <-
+      if dnf4
+      then do
+        mdnf3 <- checkSystemPathFile "dnf-3"
+        case mdnf3 of
+          Just _ -> return $ Just Dnf4
+          Nothing -> error' "dnf-3 not found"
+      else do
+        mdnf <- maybeM (checkSystemPathFile "dnf") (return . Just) $
+                checkSystemPathFile "dnf5"
+        case mdnf of
+          Just _ -> return $ Just Dnf5
+          Nothing -> return Nothing
     when save $
       if null actions
         then putStrLn "no changes to save"
         else do
-        let changes = concatMap (saveRepo dnf4) actions
+        let changes = concatMap (saveRepo mpkgmgr) actions
         unless (null changes) $ do
           ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
           when ok $ do
-            if dnf4
-              then do
-              mdnf3 <- checkSystemPathFile "dnf-3"
-              case mdnf3 of
-                Just dnf3 ->
-                  -- FIXME cannot combine --disable and --enable
-                  doSudo dryrun debug dnf3 $ "config-manager" : changes
-                Nothing ->
-                  -- FIXME need to have repo files in changes
-                  -- doSudo dryrun debug "sed" $ "config-manager" : changes
-                  error' "dnf-3 not found"
-              else do
-              mdnf <- maybeM (checkSystemPathFile "dnf") (return . Just) $
-                     checkSystemPathFile "dnf5"
-              case mdnf of
-                Just dnf ->
-                  doSudo dryrun debug dnf $ "config-manager" : changes
-                Nothing -> error' "missing dnf"
+            case mpkgmgr of
+              Just dnf -> doSudo dryrun debug (pkgMgrCmd dnf) $ "config-manager" : changes
+              Nothing -> doSudo dryrun debug "sh" ["-c", unwords $ "sed" : "-i" : map show changes ++ ["/etc/yum.repos.d/*.repo"]]
     if null args
       then
       when (null actions || listrepos) $ do
@@ -194,13 +192,7 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
       listRepos $ map (updateState actions) nameStates
       else do
       when save $ putStrLn ""
-      mdnf <-
-        if dnf4
-        then checkSystemPathFile "dnf-3"
-        else
-          maybeM (checkSystemPathFile "dnf") (return . Just) $
-          checkSystemPathFile "dnf5"
-      case mdnf of
+      case mpkgmgr of
         Just dnf ->
           let repoargs = mapMaybe changeRepo actions
               weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
@@ -215,7 +207,8 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
                                            [takeWhileEnd (/= ':') repo]
                       _ -> []
                   _ -> []
-          in doSudo dryrun debug dnf $
+              -- FIXME default to "install" of no command?
+          in doSudo dryrun debug (pkgMgrCmd dnf) $
              quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args ++
              extraargs
         -- FIXME rpm-ostree install supports --enablerepo
