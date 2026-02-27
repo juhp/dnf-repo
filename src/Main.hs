@@ -107,7 +107,7 @@ yumReposD = "/etc/yum.repos.d"
 
 checkSystemPathFile :: String -> IO (Maybe String)
 checkSystemPathFile prog = do
-  let path = splitOn ":" "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+  let path = splitOn ":" "/usr/sbin:/usr/bin"
   fmap takeFileName <$> findFile path prog
 
 -- FIXME both enabling and disabled at the same time
