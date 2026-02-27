@@ -141,10 +141,12 @@ changeRepo (BaseURL url) = Just $ "--repofrompath=" ++ repoUrlName ++ "," ++ url
                   dropPrefix "https://" url
 changeRepo _ = Nothing
 
-saveRepo :: ChangeEnable -> [String]
-saveRepo (Disable r True) = ["--disable", r]
-saveRepo (Enable r True) = ["--enable", r]
-saveRepo _ = []
+saveRepo :: Bool -> ChangeEnable -> [String]
+saveRepo dnf4 (Disable r True) =
+  if dnf4 then ["--disable", r] else ["setopt", r ++ ".enabled=0"]
+saveRepo dnf4 (Enable r True) =
+  if dnf4 then ["--enable", r] else ["setopt", r ++ ".enabled=1"]
+saveRepo _ _ = []
 
 expiring :: ChangeEnable -> Maybe String
 expiring (Expire r _) = Just r

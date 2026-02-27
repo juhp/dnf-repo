@@ -50,7 +50,7 @@ main = do
     <*> switchWith 'D' "debug" "Debug output"
     <*> switchWith 'l' "list" "List all repos"
     <*> switchWith 's' "save" "Save the repo enable/disable state"
-    <*> switchWith '4' "dnf4" "Use dnf4 (if dnf5 available)"
+    <*> switchWith '4' "dnf4" "Use older dnf-3 (if available)"
     <*> optional (flagWith' True 'w' "weak-deps" "Use weak dependencies" <|>
                   flagWith' False 'W' "no-weak-deps" "Disable weak dependencies")
     <*> switchLongWith "exact" "Match repo names exactly"
@@ -164,19 +164,28 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
       if null actions
         then putStrLn "no changes to save"
         else do
-        let changes = concatMap saveRepo actions
+        let changes = concatMap (saveRepo dnf4) actions
         unless (null changes) $ do
           ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
           when ok $ do
-            mdnf3 <- checkSystemPathFile "dnf-3"
-            case mdnf3 of
-              Just dnf3 ->
-                -- FIXME cannot combine --disable and --enable
-                doSudo dryrun debug dnf3 $ "config-manager" : changes
-              Nothing ->
-                -- FIXME need to have repo files in changes
-                -- doSudo dryrun debug "sed" $ "config-manager" : changes
-                error' "Saving repo state not yet supported without dnf"
+            if dnf4
+              then do
+              mdnf3 <- checkSystemPathFile "dnf-3"
+              case mdnf3 of
+                Just dnf3 ->
+                  -- FIXME cannot combine --disable and --enable
+                  doSudo dryrun debug dnf3 $ "config-manager" : changes
+                Nothing ->
+                  -- FIXME need to have repo files in changes
+                  -- doSudo dryrun debug "sed" $ "config-manager" : changes
+                  error' "dnf-3 not found"
+              else do
+              mdnf <- maybeM (checkSystemPathFile "dnf") (return . Just) $
+                     checkSystemPathFile "dnf5"
+              case mdnf of
+                Just dnf ->
+                  doSudo dryrun debug dnf $ "config-manager" : changes
+                Nothing -> error' "missing dnf"
     if null args
       then
       when (null actions || listrepos) $ do
