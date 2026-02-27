@@ -223,7 +223,11 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
   where
     mungeArg :: String -> String
     mungeArg "distrosync" = "distro-sync"
-    mungeArg arg = arg
+    mungeArg arg =
+      -- expand "libNAME.so.X" to "libNAME.so.X()(64bit)" etc
+      if "lib" `isPrefixOf` arg && ".so." `isInfixOf` arg && lastMay arg /= Just ')'
+      then arg ++ "()(64bit)"
+      else arg
 
 -- FIXME maybe handle string (vscode) or local file?
 addRepoFile :: Bool -> Bool -> Maybe String -> String -> IO ()
