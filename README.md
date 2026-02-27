@@ -12,7 +12,6 @@ as needed.
 
 This tool can temporarily enable/disable repo(s) selected by substring(s).
 Changes to repos' enabled states can be saved too.
-It is also possible to expire repo caches individually.
 
 There are also smart options to enable/disable testing repos
 (and even source/debuginfo repos),
@@ -23,7 +22,7 @@ and also to add Copr repo or Koji repo file.
 `$ dnf-repo --version`
 
 ```
-0.6.1
+0.6.2
 ```
 `$ dnf-repo --help`
 
@@ -31,18 +30,19 @@ and also to add Copr repo or Koji repo file.
 DNF wrapper repo tool
 
 Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
-                [-s|--save] [--dnf4] [(-w|--weak-deps) | (-W|--no-weak-deps)]
+                [-s|--save] [-4|--dnf4] [(-w|--weak-deps) | (-W|--no-weak-deps)]
                 [--exact]
                 [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
                   (-o|--only REPOPAT) | (-x|--expire REPOPAT) |
                   (-X|--clear-expires) | (-E|--delete-repofile REPOPAT) |
-                  (-t|--enable-testing) | (-T|--disable-testing) |
-                  (-m|--enable-modular) | (-M|--disable-modular) |
-                  --enable-debuginfo | --disable-debuginfo | --enable-source |
-                  --disable-source | (-c|--add-copr [SERVER/]COPR/PROJECT|URL)
-                  [--osname OSNAME] [--releasever RELEASEVER] |
+                  (-z|--timestamp REPOPAT) | (-t|--enable-testing) |
+                  (-T|--disable-testing) | (-m|--enable-modular) |
+                  (-M|--disable-modular) | --enable-debuginfo |
+                  --disable-debuginfo | --enable-source | --disable-source |
+                  (-c|--add-copr [SERVER/]COPR/PROJECT|URL) [--osname OSNAME]
+                  [--copr-releasever RELEASEVER] |
                   (-k|--add-koji REPO) | (-r|--add-repofile REPOFILEURL)
-                  [--releasever RELEASEVER] |
+                  [--repo-releasever RELEASEVER] |
                   (-u|--repourl URL)] [DNFARGS]
 
   see https://github.com/juhp/dnf-repo#readme
@@ -55,7 +55,7 @@ Available options:
   -D,--debug               Debug output
   -l,--list                List all repos
   -s,--save                Save the repo enable/disable state
-  --dnf4                   Use dnf4 (if dnf5 available)
+  -4,--dnf4                Use older dnf-3 (if available)
   -w,--weak-deps           Use weak dependencies
   -W,--no-weak-deps        Disable weak dependencies
   --exact                  Match repo names exactly
@@ -66,6 +66,7 @@ Available options:
   -X,--clear-expires       Undo cache expirations
   -E,--delete-repofile REPOPAT
                            Remove unwanted .repo file
+  -z,--timestamp REPOPAT   Show repodata timestamps
   -t,--enable-testing      Enable testing repos
   -T,--disable-testing     Disable testing repos
   -m,--enable-modular      Enable modular repos
@@ -77,12 +78,14 @@ Available options:
   -c,--add-copr [SERVER/]COPR/PROJECT|URL
                            Install copr repo file (defaults to fedora server)
   --osname OSNAME          Specify OS Name to override (eg epel)
-  --releasever RELEASEVER  Specify OS Release Version to override (eg rawhide)
+  --copr-releasever RELEASEVER
+                           Specify OS Release Version to override (eg rawhide)
   -k,--add-koji REPO       Create repo file for a Fedora koji repo (f40-build,
                            rawhide, epel9-build, etc)
   -r,--add-repofile REPOFILEURL
                            Install repo file
-  --releasever RELEASEVER  Specify OS Release Version to override (eg rawhide)
+  --repo-releasever RELEASEVER
+                           Specify OS Release Version to override (eg rawhide)
   -u,--repourl URL         Use temporary repo from a baseurl
 ```
 
@@ -170,8 +173,7 @@ Repo actions expand to a sequence of `--enablerepo=`, `--disablerepo=`,
 earlier settings.
 
 ## Installation
-A copr repo is available:
-<https://copr.fedorainfracloud.org/coprs/petersen/dnf-repo/>
+`dnf-repo` is packaged in Fedora and EPEL
 
 ## Building
 Use {cabal,stack,cabal-rpm} install.
