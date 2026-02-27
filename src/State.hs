@@ -19,6 +19,7 @@ import Data.List.Extra (dropPrefix, dropSuffix, foldl',
                         isPrefixOf, isInfixOf, isSuffixOf, nub,
                         replace, sortOn, stripInfix)
 import Data.Maybe (mapMaybe)
+import Safe (headMay, lastMay, tailSafe)
 import SimpleCmd (error', (+-+))
 import System.FilePath (takeBaseName)
 import System.FilePath.Glob (compile, match)
@@ -187,13 +188,11 @@ selectRepo exact repostates modes =
                 else
                   let actNames = mapMaybe maybeRepoName results
                   in
-                    if null actNames
-                    then results
-                    else
-                      let base = head $ sortOn (length . snd) actNames
-                      in
-                        if all ((snd base `isPrefixOf`) . snd) actNames
-                        then [fst base]
+                    case sortOn (length . snd) actNames of
+                      [] -> results
+                      (an:_ans) ->
+                        if all ((snd an `isPrefixOf`) . snd) actNames
+                        then [fst an]
                         else results
 
     selectRepoMode :: Mode -> [ChangeEnable] -> RepoState
@@ -269,18 +268,21 @@ selectRepo exact repostates modes =
         if exact
         then pat
         else
-          case ('^' == head pat,'$' == last pat) of
-            (True,True) -> init (tail pat)
-            (True,False) -> tail pat ++ ['*' | last pat /= '*']
-            (False,True) -> ['*' | head pat /= '*'] ++ init pat
-            _ -> ['*' | head pat /= '*'] ++ pat ++ ['*' | last pat /= '*']
+          case startEnd pat of
+            (True,True) -> init (tailSafe pat)
+            (True,False) -> tailSafe pat ++ ['*' | last pat /= '*']
+            (False,True) -> ['*' | headMay pat /= Just '*'] ++ init pat
+            _ -> ['*' | headMay pat /= Just '*'] ++ pat ++ ['*' | lastMay pat /= Just '*']
       | exact = (pat ==)
       | otherwise =
-          case ('^' == head pat,'$' == last pat) of
-            (True,True) -> (init (tail pat) ==)
-            (True,False) -> (tail pat `isPrefixOf`)
+          case startEnd pat of
+            (True,True) -> (init (tailSafe pat) ==)
+            (True,False) -> (tailSafe pat `isPrefixOf`)
             (False,True) -> (init pat `isSuffixOf`)
             _ -> (pat `isInfixOf`)
+
+    startEnd :: String -> (Bool,Bool)
+    startEnd pat = (headMay pat == Just '^', lastMay pat == Just '$')
 
 -- adapted from simple-cmd
 removeInfix :: String -> String-> String

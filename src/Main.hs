@@ -11,6 +11,7 @@ import Data.List.Extra
 import Data.Maybe (isJust, mapMaybe, maybeToList)
 import Data.Tuple.Extra (fst3)
 import Network.Curl (curlGetString, CurlCode(CurlOK))
+import Safe (lastMay)
 import SimpleCmd (cmdMaybe, error', warning, (+-+),
 #if MIN_VERSION_simple_cmd(0,2,4)
                   filesWithExtension
