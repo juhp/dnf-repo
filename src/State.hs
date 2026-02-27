@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module State (
   Mode(..),
   SpecificChange(..),
@@ -15,7 +17,10 @@ where
 
 --import Debug.Trace (traceShowId)
 import Data.Either (partitionEithers)
-import Data.List.Extra (dropPrefix, dropSuffix, foldl',
+import Data.List.Extra (dropPrefix, dropSuffix,
+#if !MIN_VERSION_base(4,20,0)
+                        foldl',
+#endif
                         isPrefixOf, isInfixOf, isSuffixOf, nub,
                         replace, sortOn, stripInfix)
 import Data.Maybe (mapMaybe)
