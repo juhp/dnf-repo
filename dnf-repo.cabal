@@ -40,6 +40,7 @@ executable dnf-repo
                        KojiRepo
                        State
                        Sudo
+                       TimeStamp
                        YumRepoFile
   autogen-modules:     Paths_dnf_repo
   hs-source-dirs:      src

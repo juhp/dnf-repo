@@ -9,6 +9,7 @@ import Data.Bifunctor (bimap)
 import Data.Char (isDigit)
 import Data.List.Extra
 import Data.Maybe (isJust, mapMaybe, maybeToList)
+import Data.Tuple.Extra (fst3)
 import Network.Curl (curlGetString, CurlCode(CurlOK))
 import SimpleCmd (cmdMaybe, error', warning, (+-+),
 #if MIN_VERSION_simple_cmd(0,2,4)
@@ -34,6 +35,7 @@ import ExpireRepos
 import KojiRepo
 import State
 import Sudo
+import TimeStamp
 import YumRepoFile
 
 main :: IO ()
@@ -78,6 +80,7 @@ main = do
       ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
       flagWith' ClearExpires 'X' "clear-expires" "Undo cache expirations" <|>
       DeleteRepo <$> repoOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
+      TimeStampRepo <$> repoOptionWith 'z' "timestamp" "REPOPAT" "Show repodata timestamps" <|>
       flagWith' (Specific EnableTesting) 't' "enable-testing" "Enable testing repos" <|>
       flagWith' (Specific DisableTesting) 'T' "disable-testing" "Disable testing repos" <|>
       flagWith' (Specific EnableModular) 'm' "enable-modular" "Enable modular repos" <|>
@@ -151,6 +154,9 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
         Delete repofile True -> do
           deleteRepo dryrun debug repofile
           return True
+        TimeStamp _repo mbaseurl True -> do
+          whenJust mbaseurl $ timestampRepo "rawhide"
+          return True
         _ -> return False
     when (or outputs && (save || moreoutput) && not quiet) $
       warning ""
@@ -191,12 +197,12 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
               quietopt = if quiet then ("-q" :) else id
               cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
               extraargs =
-                -- special case for "dnf-repo -c owner/project install"
-                case modes of
-                  [mode] ->
-                    case mode of
-                      AddCopr proj _ _ | args == ["install"] ->
-                                           [takeWhileEnd (/= ':') proj]
+                -- special case for "dnf-repo [-c owner/project|-e repo] install"
+                case actions of
+                  [action] ->
+                    case action of
+                      Enable repo True | args == ["install"] ->
+                                           [takeWhileEnd (/= ':') repo]
                       _ -> []
                   _ -> []
           in doSudo dryrun debug dnf $
@@ -236,7 +242,7 @@ listRepos :: [RepoState] -> IO ()
 listRepos repoStates = do
   let (on,off) =
         -- can't this be simplified?
-        bimap (map fst) (map fst) $ partition (fst . snd) repoStates
+        bimap (map fst) (map fst) $ partition (fst3 . snd) repoStates
   putStrLn "Enabled:"
   mapM_ putStrLn on
   putStrLn ""

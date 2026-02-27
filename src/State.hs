@@ -1,7 +1,7 @@
 module State (
   Mode(..),
   SpecificChange(..),
-  ChangeEnable(Expire,UnExpire,Delete),
+  ChangeEnable(Enable,Expire,UnExpire,Delete,TimeStamp),
   printAction,
   reduceOutput,
   selectRepo,
@@ -29,7 +29,7 @@ data Mode = AddCopr String (Maybe String) (Maybe String) | AddKoji String
           | AddRepo String (Maybe String) | RepoURL String
           | EnableRepo String | DisableRepo String | OnlyRepo String
           | ExpireRepo String | ClearExpires
-          | DeleteRepo String
+          | DeleteRepo String | TimeStampRepo String
           | Specific SpecificChange
   deriving (Eq, Ord, Show)
 
@@ -44,6 +44,7 @@ modePattern (OnlyRepo r) = Just r
 modePattern (ExpireRepo r) = Just r
 modePattern ClearExpires = Nothing
 modePattern (DeleteRepo r) = Just r
+modePattern (TimeStampRepo r) = Just r
 modePattern (Specific _) = Nothing
 
 data SpecificChange = EnableModular | DisableModular
@@ -69,6 +70,7 @@ data ChangeEnable = Disable String Bool
                   | Expire String Bool
                   | UnExpire
                   | Delete FilePath Bool
+                  | TimeStamp String (Maybe String) Bool
                   | BaseURL String
   deriving (Eq,Ord,Show)
 
@@ -103,6 +105,7 @@ printAction _ (Delete f s) =
   if s
   then Just $ Right $ "delete" +-+ quote f
   else Just $ Left $ quote f +-+ "deletion skipped"
+printAction _ (TimeStamp _ _ _) = Nothing
 printAction _ (BaseURL _) = Nothing
 
 reduceOutput :: [Either String String] -> [String]
@@ -119,6 +122,7 @@ maybeRepoName d@(Disable r _) = Just (d, r)
 maybeRepoName e@(Enable r _) = Just (e, r)
 maybeRepoName o@(Only r _) = Just (o, r)
 maybeRepoName x@(Expire r _) = Just (x, r)
+maybeRepoName t@(TimeStamp r _ _) = Just (t, r)
 maybeRepoName UnExpire = Nothing
 maybeRepoName (Delete _ _) = Nothing
 maybeRepoName (BaseURL _) = Nothing
@@ -128,6 +132,7 @@ changeRepo (Disable r True) = Just $ "--disablerepo=" ++ r
 changeRepo (Enable r True) = Just $ "--enablerepo=" ++ r
 changeRepo (Only r True) = Just $ "--repo=" ++ r
 changeRepo (Expire r True) = Just $ "--enablerepo=" ++ r
+changeRepo (TimeStamp r _ True) = Just $ "--enablerepo=" ++ r
 changeRepo (BaseURL url) = Just $ "--repofrompath=" ++ repoUrlName ++ "," ++ url
   where
     repoUrlName = replace "/" ":" $
@@ -151,12 +156,12 @@ deleting _ = Nothing
 
 updateState :: [ChangeEnable] -> RepoState -> RepoState
 updateState [] rs = rs
-updateState (ce:ces) re@(repo,(enabled,file)) =
+updateState (ce:ces) re@(repo,(enabled,file,url)) =
   case ce of
-    Disable r True | r == repo && enabled -> (repo,(False,file))
-    Enable r True | r == repo && not enabled -> (repo,(True,file))
-    Only r True | r == repo && not enabled -> (repo,(True,file))
-    Only r True | r /= repo && enabled -> (repo,(False,file))
+    Disable r True | r == repo && enabled -> (repo,(False,file,url))
+    Enable r True | r == repo && not enabled -> (repo,(True,file,url))
+    Only r True | r == repo && not enabled -> (repo,(True,file,url))
+    Only r True | r /= repo && enabled -> (repo,(False,file,url))
     _ -> updateState ces re
 
 selectRepo :: Bool -> [RepoState] -> [Mode] -> [ChangeEnable]
@@ -191,28 +196,31 @@ selectRepo exact repostates modes =
 
     selectRepoMode :: Mode -> [ChangeEnable] -> RepoState
                    -> Maybe ChangeEnable
-    selectRepoMode mode acc (name,(enabled,file)) =
+    selectRepoMode mode acc (name,(enabled,file,murl)) =
       case mode of
         AddCopr repo _ _ ->
-          maybeChange repo isSuffixOf (not enabled) (Enable name)
+          maybeChange repo isSuffixOf (not enabled) False (Enable name)
         AddKoji repo ->
-          maybeChange repo isSuffixOf (not enabled) (Enable name)
+          maybeChange repo isSuffixOf (not enabled) False (Enable name)
         AddRepo repo _ ->
-          maybeChange (takeBaseName repo) isSuffixOf (not enabled) (Enable name)
+          maybeChange (takeBaseName repo) isSuffixOf (not enabled) False (Enable name)
         RepoURL url -> Just $ BaseURL url
         EnableRepo pat ->
-          maybeChange pat matchesRepo (not enabled) (Enable name)
+          maybeChange pat matchesRepo (not enabled) False (Enable name)
         DisableRepo pat ->
-          maybeChange pat matchesRepo enabled (Disable name)
+          maybeChange pat matchesRepo enabled False (Disable name)
         OnlyRepo pat ->
-          maybeChange pat matchesRepo (not enabled) (Only name)
+          maybeChange pat matchesRepo (not enabled) True (Only name)
         ExpireRepo pat ->
-          maybeChange pat matchesRepo True (Expire name)
+          maybeChange pat matchesRepo True False (Expire name)
         ClearExpires -> Just UnExpire
         DeleteRepo pat ->
           maybeChange pat matchesRepo
           (not enabled || error ("disable repo before deleting:" +-+ name))
+          False
           (Delete file)
+        TimeStampRepo pat ->
+          maybeChange pat matchesRepo (not enabled) False (TimeStamp name murl)
         Specific change ->
           let substr =  repoSubstr change in
             if change `elem`
@@ -221,27 +229,30 @@ selectRepo exact repostates modes =
               maybeChange substr
               (\p n -> p `isInfixOf` n &&
                        repoStatus acc (removeInfix substr name))
-              (not enabled) (Enable name)
+              (not enabled) False (Enable name)
             else
-              maybeChange substr isInfixOf enabled (Disable name)
+              maybeChange substr isInfixOf enabled False (Disable name)
       where
-        maybeChange :: String -> (String -> String -> Bool) -> Bool
+        maybeChange :: String -> (String -> String -> Bool) -> Bool -> Bool
                     -> (Bool -> ChangeEnable) -> Maybe ChangeEnable
-        maybeChange pat matcher state change =
+        maybeChange pat matcher state always change =
           if pat `matcher` name
           then
-            if state
-            then Just $ change True
+            if always
+            then Just $ change state
             else
-              if isGlob pat
-              then Nothing
-              else Just $ change False
+              if state
+              then Just $ change True
+              else
+                if isGlob pat
+                then Nothing
+                else Just $ change False
           else Nothing
 
     repoStatus :: [ChangeEnable] -> String -> Bool
     repoStatus acc repo =
       case lookup repo repostates of
-        Just (enabled,_) ->
+        Just (enabled,_,_) ->
           enabled || Enable repo True `elem` acc
         Nothing -> False
 
