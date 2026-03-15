@@ -13,6 +13,7 @@ import Sudo
 expiredFile :: FilePath
 expiredFile = "/var/cache/dnf/expired_repos.json"
 
+-- FIXME only works for dnf4
 expireRepo :: Bool -> Bool -> String -> IO ()
 expireRepo dryrun debug repo = do
   old <- read <$> readFile expiredFile :: IO [String]

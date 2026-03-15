@@ -78,8 +78,8 @@ main = do
       DisableRepo <$> repoOptionWith 'd' "disable" "REPOPAT" "Disable repos" <|>
       EnableRepo <$> repoOptionWith 'e' "enable" "REPOPAT" "Enable repos" <|>
       OnlyRepo <$> repoOptionWith 'o' "only" "REPOPAT" "Only use matching repos" <|>
-      ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache" <|>
-      flagWith' ClearExpires 'X' "clear-expires" "Undo cache expirations" <|>
+      ExpireRepo <$> repoOptionWith 'x' "expire" "REPOPAT" "Expire repo cache (dnf4)" <|>
+      flagWith' ClearExpires 'X' "clear-expires" "Undo cache expirations (dnf4)" <|>
       DeleteRepo <$> repoOptionWith 'E' "delete-repofile" "REPOPAT" "Remove unwanted .repo file" <|>
       TimeStampRepo <$> repoOptionWith 'z' "timestamp" "REPOPAT" "Show repodata timestamps" <|>
       flagWith' (Specific EnableTesting) 't' "enable-testing" "Enable testing repos" <|>

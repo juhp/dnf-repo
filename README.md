@@ -62,8 +62,8 @@ Available options:
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
   -o,--only REPOPAT        Only use matching repos
-  -x,--expire REPOPAT      Expire repo cache
-  -X,--clear-expires       Undo cache expirations
+  -x,--expire REPOPAT      Expire repo cache (dnf4)
+  -X,--clear-expires       Undo cache expirations (dnf4)
   -E,--delete-repofile REPOPAT
                            Remove unwanted .repo file
   -z,--timestamp REPOPAT   Show repodata timestamps

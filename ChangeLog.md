@@ -14,6 +14,7 @@
 - move addCoprRepo to CoprRepo.hs
 - move addKojiRepo to KojiRepo.hs
 - use dnf-3 for '--dnf4'
+- mark expiry options as dnf4-only
 
 ## 0.6.1 (2024-06-14)
 - add `--add-repofile URL` action
