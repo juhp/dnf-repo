@@ -1,7 +1,7 @@
 [koji-@REPO@]
 name=Fedora - Koji @REPO@
 failovermethod=priority
-baseurl=https://kojipkgs.fedoraproject.org/repos/@REPO@/latest/@ARCH@/
+baseurl=https://kojipkgs.fedoraproject.org/repos/@REPO@/latest/$basearch/
 enabled=0
 metadata_expire=1h
 repo_gpgcheck=0

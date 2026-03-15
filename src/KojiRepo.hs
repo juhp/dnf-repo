@@ -23,9 +23,7 @@ addKojiRepo dryrun debug repo = do
   let repourl = "https://kojipkgs.fedoraproject.org/repos" +/+ repo +/+ "latest" +/+ sysarch ++ "/"
   unlessM (httpExists' repourl) $ error' $ "no such koji repo:" +-+ repourl
   template <- getDataFileName kojiRepoTemplate
-  repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g",
-                        "-e", "s/@ARCH@/" ++ sysarch ++ "/",
-                        template]
+  repodef <- cmd "sed" ["-e", "s/@REPO@/" ++ repo ++ "/g", template]
   let repofile = replace "REPO" repo kojiRepoTemplate
   exists <- doesFileExist repofile
   if exists
