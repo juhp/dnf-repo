@@ -29,19 +29,19 @@ and also to add Copr repo or Koji repo file.
 ```
 DNF wrapper repo tool
 
-Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
+Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list] 
                 [-s|--save] [-4|--dnf4] [(-w|--weak-deps) | (-W|--no-weak-deps)]
-                [--exact]
-                [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) |
-                  (-o|--only REPOPAT) | (-x|--expire REPOPAT) |
-                  (-X|--clear-expires) | (-E|--delete-repofile REPOPAT) |
-                  (-z|--timestamp REPOPAT) | (-t|--enable-testing) |
-                  (-T|--disable-testing) | (-m|--enable-modular) |
-                  (-M|--disable-modular) | --enable-debuginfo |
-                  --disable-debuginfo | --enable-source | --disable-source |
-                  (-c|--add-copr [SERVER/]COPR/PROJECT|URL) [--osname OSNAME]
+                [--exact] 
+                [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) | 
+                  (-o|--only REPOPAT) | (-x|--expire REPOPAT) | 
+                  (-X|--clear-expires) | (-E|--delete-repofile REPOPAT) | 
+                  (-z|--timestamp REPOPAT) | (-t|--enable-testing) | 
+                  (-T|--disable-testing) | (-m|--enable-modular) | 
+                  (-M|--disable-modular) | --enable-debuginfo | 
+                  --disable-debuginfo | --enable-source | --disable-source | 
+                  (-c|--add-copr [SERVER/]COPR/PROJECT|URL) [--osname OSNAME] 
                   [--copr-releasever RELEASEVER] |
-                  (-k|--add-koji REPO) | (-r|--add-repofile REPOFILEURL)
+                  (-k|--add-koji REPO) | (-r|--add-repofile REPOFILEURL) 
                   [--repo-releasever RELEASEVER] |
                   (-u|--repourl URL)] [DNFARGS]
 

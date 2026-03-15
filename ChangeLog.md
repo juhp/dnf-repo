@@ -1,19 +1,20 @@
 # dnf-repo releases
 
-## 0.6.2 (2026-02-28)
-- '--save' now works without dnf using sed
+## 0.6.2 (2026-03-15)
+- `--save` now works without dnf using sed
 - munge "libNAME.so.X" to "libNAME.so.X()(64bit)" (hardcoded)
 - State: base-4.21 exports foldl'
 - only look for programs in /usr/bin and /bin
 - avoid head and last with safe
-- '--save': use dnf5 unless --dnf4
-- disambiguate '--releasever's to '--copr-releasever' and '--repo-releasever'
-- add '--timestamp': required big refactor to carry repourl
-- fix '--koji' for other archs (.repo was hardcoded x86_64)
-- '-4' short option for '--dnf4'
+- `--save`: use dnf5 unless --dnf4
+- disambiguate `-releasever`s to `--copr-releasever` and `--repo-releasever`
+- add `--timestamp`: required big refactor to carry repourl
+- fix `--koji` for other archs (.repo was hardcoded x86_64)
+- `-4` short option for `--dnf4`
 - move addCoprRepo to CoprRepo.hs
 - move addKojiRepo to KojiRepo.hs
-- use dnf-3 for '--dnf4'
+- use dnf-3 for `--dnf4`
+- simplify koji template
 - mark expiry options as dnf4-only
 
 ## 0.6.1 (2024-06-14)
