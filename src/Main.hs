@@ -169,11 +169,14 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
           Just _ -> return $ Just Dnf4
           Nothing -> error' "dnf-3 not found"
       else do
-        mdnf <- maybeM (checkSystemPathFile "dnf") (return . Just) $
-                checkSystemPathFile "dnf5"
-        case mdnf of
+        mdnf5 <- checkSystemPathFile "dnf5"
+        case mdnf5 of
           Just _ -> return $ Just Dnf5
-          Nothing -> return Nothing
+          Nothing -> do
+            mdnf3 <- checkSystemPathFile "dnf-3"
+            case mdnf3 of
+              Just _ -> return $ Just Dnf4
+              Nothing -> return Nothing
     when save $
       if null actions
         then putStrLn "no changes to save"

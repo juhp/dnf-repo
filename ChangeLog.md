@@ -1,5 +1,8 @@
 # dnf-repo releases
 
+## 0.6.3 (2026-05-27)
+- fix 0.6.2 regression in dnf detection logic that defaulted to /usr/bin/dnf5
+
 ## 0.6.2 (2026-03-15)
 - `--save` now works without dnf using sed
 - munge "libNAME.so.X" to "libNAME.so.X()(64bit)" (hardcoded)

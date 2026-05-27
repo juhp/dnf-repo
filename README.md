@@ -22,7 +22,7 @@ and also to add Copr repo or Koji repo file.
 `$ dnf-repo --version`
 
 ```
-0.6.2
+0.6.3
 ```
 `$ dnf-repo --help`
 
