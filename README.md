@@ -178,6 +178,11 @@ earlier settings.
 ## Building
 Use {cabal,stack,cabal-rpm} install.
 
+## Known issues
+Currently dnf5's `/etc/dnf/repos.override.d/` (set by config-manager) is
+ignored, and as of 0.6.3 `dnf-repo --save` will edit .repo files directly
+as dnf4 does.
+
 ## Contributing
 dnf-repo is distributed under the GPL license version 3 or later.
 

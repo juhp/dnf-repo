@@ -150,26 +150,21 @@ changeRepo (BaseURL url) = Just $ "--repofrompath=" ++ repoUrlName ++ "," ++ url
 changeRepo _ = Nothing
 
 data PkgMgr = Dnf5 | Dnf4
+  deriving Eq
 
 pkgMgrCmd :: PkgMgr -> String
 pkgMgrCmd Dnf5 = "dnf5"
 pkgMgrCmd Dnf4 = "dnf-3"
 
-saveRepo :: Maybe PkgMgr -> ChangeEnable -> [String]
-saveRepo pkgmgr (Disable r True) =
-  case pkgmgr of
-    Just dnf ->
-      case dnf of
-        Dnf4 -> ["--disable", r]
-        Dnf5 -> ["setopt", r ++ ".enabled=0"]
-    Nothing -> ["/^\\[" ++ r  ++ "\\]/,/^\\[/ s/^enabled=1/enabled=0/"]
-saveRepo pkgmgr (Enable r True) =
-  case pkgmgr of
-    Just dnf ->
-      case dnf of
-        Dnf4 -> ["--enable", r]
-        Dnf5 -> ["setopt", r ++ ".enabled=1"]
-    Nothing -> ["/^\\[" ++ r  ++ "\\]/,/^\\[/ s/^enabled=0/enabled=1/"]
+saveRepo :: Bool -> ChangeEnable -> [String]
+saveRepo dnf4 (Disable r True) =
+  if dnf4
+  then ["--disable", r]
+  else ["/^\\[" ++ r  ++ "\\]/,/^\\[/ s/^enabled=1/enabled=0/"]
+saveRepo dnf4 (Enable r True) =
+  if dnf4
+  then ["--enable", r]
+  else ["/^\\[" ++ r  ++ "\\]/,/^\\[/ s/^enabled=0/enabled=1/"]
 saveRepo _ _ = []
 
 expiring :: ChangeEnable -> Maybe String

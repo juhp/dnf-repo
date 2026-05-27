@@ -113,6 +113,7 @@ checkSystemPathFile prog = do
 -- FIXME both enabling and disabled at the same time
 -- FIXME confirm repos if many
 -- FIXME --disable-non-cores (modular,testing,cisco, etc)
+-- FIXME support dnf5 /etc/dnf/repos.override.d/99-config_manager.repo
 runMain :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> Maybe Bool -> Bool
         -> [Mode] -> [String] -> IO ()
 runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
@@ -181,13 +182,13 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
       if null actions
         then putStrLn "no changes to save"
         else do
-        let changes = concatMap (saveRepo mpkgmgr) actions
+        let changes = concatMap (saveRepo (mpkgmgr == Just Dnf4)) actions
         unless (null changes) $ do
           ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
-          when ok $ do
-            case mpkgmgr of
-              Just dnf -> doSudo dryrun debug (pkgMgrCmd dnf) $ "config-manager" : changes
-              Nothing -> doSudo dryrun debug "sh" ["-c", unwords $ "sed" : "-i" : map show changes ++ ["/etc/yum.repos.d/*.repo"]]
+          when ok $
+            if mpkgmgr == Just Dnf4
+            then doSudo dryrun debug (pkgMgrCmd Dnf4) $ "config-manager" : changes
+            else doSudo dryrun debug "sh" ["-c", unwords $ "sed" : "-i" : map show changes ++ ["/etc/yum.repos.d/*.repo"]]
     if null args
       then
       when (null actions || listrepos) $ do
