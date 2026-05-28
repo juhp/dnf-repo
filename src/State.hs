@@ -218,28 +218,27 @@ selectRepo exact repostates modes =
     selectRepoMode mode acc (name,(enabled,file,murl)) =
       case mode of
         AddCopr repo _ _ ->
-          maybeChange repo isSuffixOf (not enabled) False (Enable name)
+          maybeChange repo isSuffixOf (not enabled) (Enable name)
         AddKoji repo ->
-          maybeChange repo isSuffixOf (not enabled) False (Enable name)
+          maybeChange repo isSuffixOf (not enabled) (Enable name)
         AddRepo repo _ ->
-          maybeChange (takeBaseName repo) isSuffixOf (not enabled) False (Enable name)
+          maybeChange (takeBaseName repo) isSuffixOf (not enabled) (Enable name)
         RepoURL url -> Just $ BaseURL url
         EnableRepo pat ->
-          maybeChange pat matchesRepo (not enabled) False (Enable name)
+          maybeChange pat matchesRepo (not enabled) (Enable name)
         DisableRepo pat ->
-          maybeChange pat matchesRepo enabled False (Disable name)
+          maybeChange pat matchesRepo enabled (Disable name)
         OnlyRepo pat ->
-          maybeChange pat matchesRepo (not enabled) True (Only name)
+          maybeChange pat matchesRepo True (Only name)
         ExpireRepo pat ->
-          maybeChange pat matchesRepo True False (Expire name)
+          maybeChange pat matchesRepo True (Expire name)
         ClearExpires -> Just UnExpire
         DeleteRepo pat ->
           maybeChange pat matchesRepo
           (not enabled || error ("disable repo before deleting:" +-+ name))
-          False
           (Delete file)
         TimeStampRepo pat ->
-          maybeChange pat matchesRepo (not enabled) False (TimeStamp name murl)
+          maybeChange pat matchesRepo (not enabled) (TimeStamp name murl)
         Specific change ->
           let substr =  repoSubstr change in
             if change `elem`
@@ -248,24 +247,21 @@ selectRepo exact repostates modes =
               maybeChange substr
               (\p n -> p `isInfixOf` n &&
                        repoStatus acc (removeInfix substr name))
-              (not enabled) False (Enable name)
+              (not enabled) (Enable name)
             else
-              maybeChange substr isInfixOf enabled False (Disable name)
+              maybeChange substr isInfixOf enabled (Disable name)
       where
-        maybeChange :: String -> (String -> String -> Bool) -> Bool -> Bool
+        maybeChange :: String -> (String -> String -> Bool) -> Bool
                     -> (Bool -> ChangeEnable) -> Maybe ChangeEnable
-        maybeChange pat matcher state always change =
+        maybeChange pat matcher state change =
           if pat `matcher` name
           then
-            if always
-            then Just $ change state
+            if state
+            then Just $ change True
             else
-              if state
-              then Just $ change True
-              else
-                if isGlob pat
-                then Nothing
-                else Just $ change False
+              if isGlob pat
+              then Nothing
+              else Just $ change False
           else Nothing
 
     repoStatus :: [ChangeEnable] -> String -> Bool
