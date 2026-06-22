@@ -120,7 +120,8 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
   hSetBuffering stdout NoBuffering
   unlessM (doesDirectoryExist yumReposD) $
     error' $ yumReposD +-+ "not found!"
-  withCurrentDirectory yumReposD $ do
+  (nameStates,actions) <-
+    withCurrentDirectory yumReposD $ do
     forM_ modes $
       \case
         AddCopr copr mosname mrelease ->
@@ -162,61 +163,62 @@ runMain dryrun quiet debug listrepos save dnf4 mweakdeps exact modes args = do
         _ -> return False
     when (or outputs && (save || moreoutput) && not quiet) $
       warning ""
-    mpkgmgr <-
-      if dnf4
-      then do
-        mdnf3 <- checkSystemPathFile "dnf-3"
-        case mdnf3 of
-          Just _ -> return $ Just Dnf4
-          Nothing -> error' "dnf-3 not found"
+    return (nameStates,actions)
+  mpkgmgr <-
+    if dnf4
+    then do
+      mdnf3 <- checkSystemPathFile "dnf-3"
+      case mdnf3 of
+        Just _ -> return $ Just Dnf4
+        Nothing -> error' "dnf-3 not found"
+    else do
+      mdnf5 <- checkSystemPathFile "dnf5"
+      case mdnf5 of
+        Just _ -> return $ Just Dnf5
+        Nothing -> do
+          mdnf3 <- checkSystemPathFile "dnf-3"
+          case mdnf3 of
+            Just _ -> return $ Just Dnf4
+            Nothing -> return Nothing
+  when save $
+    if null actions
+      then putStrLn "no changes to save"
       else do
-        mdnf5 <- checkSystemPathFile "dnf5"
-        case mdnf5 of
-          Just _ -> return $ Just Dnf5
-          Nothing -> do
-            mdnf3 <- checkSystemPathFile "dnf-3"
-            case mdnf3 of
-              Just _ -> return $ Just Dnf4
-              Nothing -> return Nothing
-    when save $
-      if null actions
-        then putStrLn "no changes to save"
-        else do
-        let changes = concatMap (saveRepo (mpkgmgr == Just Dnf4)) actions
-        unless (null changes) $ do
-          ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
-          when ok $
-            if mpkgmgr == Just Dnf4
-            then doSudo dryrun debug (pkgMgrCmd Dnf4) $ "config-manager" : changes
-            else doSudo dryrun debug "sh" ["-c", unwords $ "sed" : "-i" : map show changes ++ ["/etc/yum.repos.d/*.repo"]]
-    if null args
-      then
-      when (null actions || listrepos) $ do
-      when save $ putStrLn ""
-      listRepos $ map (updateState actions) nameStates
-      else do
-      when save $ putStrLn ""
-      case mpkgmgr of
-        Just dnf ->
-          let repoargs = mapMaybe changeRepo actions
-              weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
-              quietopt = if quiet then ("-q" :) else id
-              cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
-              extraargs =
-                -- special case for "dnf-repo [-c owner/project|-e repo] install"
-                case actions of
-                  [action] ->
-                    case action of
-                      Enable repo True | args == ["install"] ->
-                                           [takeWhileEnd (/= ':') repo]
-                      _ -> []
-                  _ -> []
-              -- FIXME default to "install" of no command?
-          in doSudo dryrun debug (pkgMgrCmd dnf) $
-             quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args ++
-             extraargs
-        -- FIXME rpm-ostree install supports --enablerepo
-        Nothing -> error' "missing dnf (rpm-ostree is not supported)"
+      let changes = concatMap (saveRepo (mpkgmgr == Just Dnf4)) actions
+      unless (null changes) $ do
+        ok <- yesNo $ "Save changed repo" +-+ "enabled state" ++ ['s' | length changes > 1]
+        when ok $
+          if mpkgmgr == Just Dnf4
+          then doSudo dryrun debug (pkgMgrCmd Dnf4) $ "config-manager" : changes
+          else doSudo dryrun debug "sh" ["-c", unwords $ "sed" : "-i" : map show changes ++ ["/etc/yum.repos.d/*.repo"]]
+  if null args
+    then
+    when (null actions || listrepos) $ do
+    when save $ putStrLn ""
+    listRepos $ map (updateState actions) nameStates
+    else do
+    when save $ putStrLn ""
+    case mpkgmgr of
+      Just dnf ->
+        let repoargs = mapMaybe changeRepo actions
+            weakdeps = maybe [] (\w -> ["--setopt=install_weak_deps=" ++ show w]) mweakdeps
+            quietopt = if quiet then ("-q" :) else id
+            cachedir = ["--setopt=cachedir=/var/cache/dnf" </> relver | relver <- maybeToList (maybeReleaseVer args)]
+            extraargs =
+              -- special case for "dnf-repo [-c owner/project|-e repo] install"
+              case actions of
+                [action] ->
+                  case action of
+                    Enable repo True | args == ["install"] ->
+                                         [takeWhileEnd (/= ':') repo]
+                    _ -> []
+                _ -> []
+            -- FIXME default to "install" of no command?
+        in doSudo dryrun debug (pkgMgrCmd dnf) $
+           quietopt repoargs ++ cachedir ++ weakdeps ++ map mungeArg args ++
+           extraargs
+      -- FIXME rpm-ostree install supports --enablerepo
+      Nothing -> error' "missing dnf (rpm-ostree is not supported)"
   where
     mungeArg :: String -> String
     mungeArg "distrosync" = "distro-sync"
