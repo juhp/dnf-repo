@@ -1,5 +1,9 @@
 # dnf-repo releases
 
+## 0.6.4 (2026-06-22)
+- fix handling of --only for enabled repos
+- don't run dnf from /etc/yum.repos.d/ to unbreak relative rpm paths
+
 ## 0.6.3 (2026-05-27)
 - fix 0.6.2 regression in dnf detection logic that defaulted to /usr/bin/dnf5
 - with dnf5 `--save` no longer uses config-manager since

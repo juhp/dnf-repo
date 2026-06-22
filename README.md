@@ -22,7 +22,7 @@ and also to add Copr repo or Koji repo file.
 `$ dnf-repo --version`
 
 ```
-0.6.3
+0.6.4
 ```
 `$ dnf-repo --help`
 
@@ -33,14 +33,14 @@ Usage: dnf-repo [--version] [-n|--dryrun] [-q|--quiet] [-D|--debug] [-l|--list]
                 [-s|--save] [-4|--dnf4] [(-w|--weak-deps) | (-W|--no-weak-deps)]
                 [--exact] 
                 [(-d|--disable REPOPAT) | (-e|--enable REPOPAT) | 
-                  (-o|--only REPOPAT) | (-x|--expire REPOPAT) | 
-                  (-X|--clear-expires) | (-E|--delete-repofile REPOPAT) | 
-                  (-z|--timestamp REPOPAT) | (-t|--enable-testing) | 
-                  (-T|--disable-testing) | (-m|--enable-modular) | 
-                  (-M|--disable-modular) | --enable-debuginfo | 
-                  --disable-debuginfo | --enable-source | --disable-source | 
-                  (-c|--add-copr [SERVER/]COPR/PROJECT|URL) [--osname OSNAME] 
-                  [--copr-releasever RELEASEVER] |
+                  (-o|--only REPOPAT) | --base-mirror URL | 
+                  (-x|--expire REPOPAT) | (-X|--clear-expires) | 
+                  (-E|--delete-repofile REPOPAT) | (-z|--timestamp REPOPAT) | 
+                  (-t|--enable-testing) | (-T|--disable-testing) | 
+                  (-m|--enable-modular) | (-M|--disable-modular) | 
+                  --enable-debuginfo | --disable-debuginfo | --enable-source | 
+                  --disable-source | (-c|--add-copr [SERVER/]COPR/PROJECT|URL) 
+                  [--osname OSNAME] [--copr-releasever RELEASEVER] |
                   (-k|--add-koji REPO) | (-r|--add-repofile REPOFILEURL) 
                   [--repo-releasever RELEASEVER] |
                   (-u|--repourl URL)] [DNFARGS]
@@ -62,6 +62,8 @@ Available options:
   -d,--disable REPOPAT     Disable repos
   -e,--enable REPOPAT      Enable repos
   -o,--only REPOPAT        Only use matching repos
+  --base-mirror URL        Override fedora metalink with a mirror baseurl (eg
+                           'cloudfront', or reset with 'metalink')
   -x,--expire REPOPAT      Expire repo cache (dnf4)
   -X,--clear-expires       Undo cache expirations (dnf4)
   -E,--delete-repofile REPOPAT
